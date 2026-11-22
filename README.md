@@ -15,10 +15,17 @@ Drop it into a new or existing repository, run `/kit-init`, and Claude starts ev
 /project-kit:adopt
 ```
 
+<p align="center"><img src="docs/images/demo.gif" alt="Animated diagram: agents, a bounded loop, an explicit graph, and a feedback loop through the knowledge graph, with arrows drawing and flowing" width="860"></p>
+
+## Watch the explainer (3 minutes)
+
+Narrated walkthrough with every diagram animated: the problem, setup, the loops, context resets and the knowledge graph.
+
 <p align="center"><img src="docs/images/why.svg" alt="Without the kit you correct the same mistake every session; with the kit the first correction becomes a lesson that later sessions recall" width="860"></p>
 
 ## Contents
 
+- [Watch the explainer](#watch-the-explainer-3-minutes)
 - [Quick start](#quick-start)
 - [What you get](#what-you-get)
 - [Situations where it helps](#situations-where-it-helps)
