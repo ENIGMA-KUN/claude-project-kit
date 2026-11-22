@@ -1,10 +1,18 @@
 # Claude project kit
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-a8473a.svg)](LICENSE)
+![Version](https://img.shields.io/badge/version-1.1.0-a8473a.svg)
+![Python](https://img.shields.io/badge/python-3.8%2B-a8473a.svg)
+![Dependencies](https://img.shields.io/badge/dependencies-none-a8473a.svg)
 
 A plug-and-play Claude Code setup that adapts to any project and gets better the more you use it.
 
-Drop it into a new or existing repository, run `/kit-init`, and Claude starts every session knowing the project's architecture, its decisions and the mistakes it should not repeat. When you correct Claude, the correction becomes a reviewed lesson in a small knowledge graph, and the next session recalls it on its own. Once a week, `/curate` turns the friction it logged into concrete improvements, and nothing changes until you approve it.
+Drop it into a new or existing repository, run `/kit-init`, and Claude starts every session knowing the project's architecture, its decisions and the mistakes it should not repeat. When you correct Claude, the correction becomes a reviewed lesson in a small knowledge graph, and the next session recalls it on its own. Decisions and the current goal survive compaction and `/clear`. Once a week, `/curate` turns the friction it logged into concrete improvements, and nothing changes until you approve it.
+
+```
+/plugin install project-kit --marketplace ENIGMA-KUN/claude-project-kit
+/project-kit:adopt
+```
 
 <p align="center"><img src="docs/images/why.svg" alt="Without the kit you correct the same mistake every session; with the kit the first correction becomes a lesson that later sessions recall" width="860"></p>
 
@@ -18,43 +26,57 @@ Drop it into a new or existing repository, run `/kit-init`, and Claude starts ev
 - [Context resets and decisions](#context-resets-and-decisions)
 - [The knowledge graph](#the-knowledge-graph)
 - [Safety model](#safety-model)
+- [How it compares](#how-it-compares)
 - [FAQ](#faq)
+- [Contributing](#contributing)
 - [Credits](#credits)
 
 ## Quick start
 
-<p align="center"><img src="docs/images/quick-start.svg" alt="Clone, install, run /kit-init, work, curate weekly" width="860"></p>
+<p align="center"><img src="docs/images/quick-start.svg" alt="Install the plugin, run /project-kit:adopt, /kit-init adapts it, work, curate weekly" width="860"></p>
 
-Requirements: [Claude Code](https://code.claude.com), git, and Python 3.8 or newer on PATH. No packages to install; everything is standard library.
+Requirements: [Claude Code](https://code.claude.com) 2.1.275 or later, git, and Python 3.8 or newer on PATH. Nothing else to install; the engine is standard-library Python.
 
-### 1. Get the kit (once)
+### Option A: plugin (recommended)
+
+Inside Claude Code, run:
+
+```
+/plugin install project-kit --marketplace ENIGMA-KUN/claude-project-kit
+```
+
+Then, in any project you want to set up:
+
+```
+/project-kit:adopt
+```
+
+`adopt` copies the kit into the project and runs `/kit-init` for you. On older Claude Code versions, add the marketplace first with `/plugin marketplace add ENIGMA-KUN/claude-project-kit`, then `/plugin install project-kit@claude-project-kit`.
+
+### Option B: clone and run the installer
 
 ```bash
 git clone https://github.com/ENIGMA-KUN/claude-project-kit.git
 cd claude-project-kit
 ```
 
-### 2. Install it into a project
-
 Windows (PowerShell):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\install.ps1 -Target C:\path\to\your-project -Global
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -Target C:\path\to\your-project
 ```
-
-`-ExecutionPolicy Bypass` only matters if script execution is disabled on your machine, and it applies to this one command.
 
 macOS or Linux:
 
 ```bash
-./install.sh /path/to/your-project --global
+./install.sh /path/to/your-project
 ```
 
-`-Global` is optional. It adds a personal `/kit-adopt` command, so later you can open Claude Code in any repository and type `/kit-adopt` instead of running the installer by hand.
+Add `-Global` (or `--global`) to also install a personal `/kit-adopt` command that works in every project without the plugin. `-ExecutionPolicy Bypass` only matters if script execution is disabled on your machine, and applies to that one command.
 
-### 3. Adapt it to the project
+### Adapt it to the project
 
-Open Claude Code in the project folder (restart it if it was already open) and run one of:
+With option B, or to re-run later, open Claude Code in the project folder and run one of:
 
 | Your project | Command |
 |--------------|---------|
@@ -62,7 +84,7 @@ Open Claude Code in the project folder (restart it if it was already open) and r
 | Empty or nearly empty folder | `/kit-init --new` |
 | Kit already installed, or the project changed a lot | `/kit-init --refresh` |
 
-`/kit-init` reads the code first, asks at most four questions about things the code cannot tell it, then writes a short `CLAUDE.md`, seeds the knowledge graph and records your real test and lint commands.
+`/kit-init` reads the code first, asks at most four questions about things the code cannot tell it, then writes a short `CLAUDE.md`, seeds the knowledge graph and records your real test and lint commands. Restart Claude Code afterwards so the project hooks load.
 
 The installer never overwrites your files. If you already have a `CLAUDE.md` or `.claude/settings.json`, the kit's version is parked in `.claude/kit/incoming/` and `/kit-init` merges it with you.
 
@@ -181,25 +203,9 @@ Project knowledge that may apply (read the file before relying on details):
 - [lesson] Use uv, not pip: Run uv add / uv run; never pip install. (knowledge/lessons/use-uv-not-pip.md)
 ```
 
-A filled-in example lives in [examples/sample-project](examples/sample-project). Its graph:
+A filled-in example lives in [examples/sample-project](examples/sample-project):
 
-```mermaid
-flowchart LR
-  A[API layer]:::arch -->|depends_on| S[Billing service]:::arch
-  S -->|depends_on| D[Database layer]:::arch
-  U[UUIDs as public ids]:::dec -->|related| A
-  L1[Never query the DB from routes]:::les -->|implements| LAY[Three-layer architecture]:::dec
-  L2[Use uv, not pip]:::les -->|depends_on| B[Build system]:::arch
-  F[Flaky timezone test]:::sol -->|fixes| L3[Store timestamps in UTC]:::les
-  C[Active customer]:::con -->|related| S
-  P[Proposal: hook that blocks pip]:::prop -->|related| L2
-  classDef arch fill:#e6f4ea,stroke:#2e7d32
-  classDef dec fill:#e1ecfd,stroke:#2c5aa0
-  classDef les fill:#fde2e1,stroke:#c0392b
-  classDef sol fill:#fff4d6,stroke:#b7791f
-  classDef con fill:#f3e8fd,stroke:#7b3fb5
-  classDef prop fill:#eeeeee,stroke:#777,stroke-dasharray:4 3
-```
+<p align="center"><img src="docs/images/sample-graph.svg" alt="Sample knowledge graph: architecture, decisions, lessons, a solution, a concept and a pending proposal linked by typed relations" width="860"></p>
 
 Everyday commands, from the project root:
 
@@ -223,6 +229,28 @@ Full schema: [template/knowledge/_schema.md](template/knowledge/_schema.md).
 - Untrusted input: facts from web pages, issues or other tools enter the graph only as candidates, which are never served to sessions until approved.
 - Approval: the constitution says nothing reaches `CLAUDE.md`, rules, skills, hooks or settings without your yes, and a hook asks before anything edits the constitution.
 - Failure mode: hooks fail open. A kit bug logs to `.claude/kit/state/hook-errors.log` and never blocks your session.
+
+## How it compares
+
+This kit is new and small. Several popular projects cover parts of the same ground, and some go much further in breadth. Star counts are from GitHub on 2026-11-22.
+
+| Project | Stars | What it is | How this kit relates |
+|---------|-------|------------|----------------------|
+| [ECC](https://github.com/affaan-m/ECC) | 309k | A large harness layer: 72 agents, 328 skills, hooks, rules, continuous learning ("instincts" with confidence scores), support for several agent tools | Far broader. This kit is one integrated loop with a handful of skills, aimed at teams that want every promotion reviewed and measured |
+| [Graphify](https://github.com/Graphify-Labs/graphify) | 152k | Builds a knowledge graph of a codebase from the code itself | Complementary. Graphify maps code structure; this graph holds the decisions, lessons and reasons the code does not contain |
+| [gstack](https://github.com/garrytan/gstack) | 142k | An opinionated set of workflow skills (planning, review, QA, release) plus GBrain memory | gstack brings a process; this kit adapts to the process a repository already has |
+| [claude-mem](https://github.com/thedotmack/claude-mem) | 119k | Captures what an agent does, compresses it, and injects it into later sessions, with search | claude-mem remembers broadly and automatically; this kit stores fewer, reviewed facts as Markdown in git, where a team can diff them |
+| [claude-code-templates](https://github.com/davila7/claude-code-templates) | 34k | A registry and CLI to install agents, commands, hooks and MCP servers | A catalog of parts; this kit is one connected system. They work together |
+
+What this kit puts first, and where to look if you want to check the claim:
+
+- A written constitution and a human approval step for anything that reaches always-on context ([constitution](template/.claude/constitution.md), [/curate](template/.claude/skills/curate/SKILL.md)).
+- Measured lessons: how often each lesson was recalled, and whether the failure it targets came back afterwards ([signals](docs/how-it-works.md#signals)).
+- A task ledger with decision statuses and sign-off that survives compaction and `/clear` ([ledger](docs/how-it-works.md#task-ledger-and-resume-brief)).
+- Bounded loops with an independent verifier that checks approved decisions and dead ends ([loop contract](template/.claude/skills/loop-contract/SKILL.md), [verifier](template/.claude/agents/verifier.md)).
+- No dependencies and no network calls; an end-to-end test suite that runs on Windows with Python 3.8 to 3.12.
+
+What it does not have yet: a large user base, support for agents other than Claude Code, semantic (embedding) search, and a library of ready-made domain skills. If you need those today, the projects above are further along, and most of them can run alongside this kit.
 
 ## FAQ
 
@@ -261,6 +289,8 @@ Tell Claude; it will offer to update it. Nodes are never deleted, only marked `s
 ## Repository layout
 
 ```
+.claude-plugin/           plugin and marketplace manifests (/plugin install)
+plugin/skills/adopt/      the /project-kit:adopt skill
 install.ps1, install.sh   launchers that find Python and call install.py
 install.py                the installer (never overwrites your files)
 INIT_PROMPT.md            the init prompt for manual use or other agents
@@ -282,7 +312,7 @@ template/                 what gets copied into a project
 
 ## Contributing
 
-Issues and pull requests are welcome. Run `python tests/smoke_test.py` before sending a change; it builds a throwaway project, installs the kit and exercises the engine and every hook event. If you used the kit on a kind of project it handled badly, an issue with the `FEEDBACK.md` note `/kit-init` wrote is the most useful report.
+Contributions are welcome, from a typo fix to a new hook. [CONTRIBUTING.md](CONTRIBUTING.md) explains the layout, the design rules every change has to keep (human approval, evidence, no dependencies, fail-open hooks), how to run the tests, and a list of good first issues. The most useful report of all is a project the kit handled badly: open a "Kit feedback" issue with the note `/kit-init` wrote.
 
 ## Credits
 

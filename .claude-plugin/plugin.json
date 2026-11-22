@@ -1,0 +1,25 @@
+{
+  "name": "project-kit",
+  "displayName": "Claude Project Kit",
+  "version": "1.1.0",
+  "description": "Adapts Claude Code to any repository and keeps improving it: knowledge graph, learning hooks, task ledger that survives compaction and /clear, bounded loops, human-approved curation.",
+  "author": {
+    "name": "ENIGMA-KUN",
+    "url": "https://github.com/ENIGMA-KUN"
+  },
+  "homepage": "https://github.com/ENIGMA-KUN/claude-project-kit",
+  "repository": "https://github.com/ENIGMA-KUN/claude-project-kit",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "knowledge-graph",
+    "memory",
+    "context-engineering",
+    "hooks",
+    "skills",
+    "self-improving"
+  ],
+  "skills": [
+    "./plugin/skills/"
+  ]
+}

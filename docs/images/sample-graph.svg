@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500" width="900" height="500" role="img" aria-labelledby="t d">
+  <title id="t">Sample knowledge graph</title>
+  <desc id="d">The sample project's graph: architecture nodes for the API layer, billing service, database layer and build system; decisions for UUID public ids and the three-layer architecture; lessons, a solution, a concept and a pending proposal, linked by typed relations.</desc>
+  <defs>
+    <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="0.9" fill="#e3d9c8"/></pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a64b3c"/></marker>
+    <style>
+      .kicker{font:700 11px Helvetica,Arial,sans-serif;letter-spacing:2px;fill:#a8473a}
+      .title{font:700 30px "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:-0.6px;fill:#1f1f1f}
+      .t{font:700 12px Helvetica,Arial,sans-serif;fill:#1f1f1f}
+      .rel{font:700 10px Helvetica,Arial,sans-serif;fill:#a8473a;letter-spacing:0.3px}
+      .leg{font:400 12px Helvetica,Arial,sans-serif;fill:#5b5149}
+      .edge{stroke:#a64b3c;stroke-width:1.8;fill:none}
+      .panel{fill:#fbfaf6;stroke:#b98474;stroke-width:1.2}
+      .shadow{fill:#e5dbcd}
+      .arch{fill:#e6f4ea;stroke:#2e7d32;stroke-width:1.4}
+      .dec{fill:#e1ecfd;stroke:#2c5aa0;stroke-width:1.4}
+      .les{fill:#fde2e1;stroke:#c0392b;stroke-width:1.4}
+      .sol{fill:#fff4d6;stroke:#b7791f;stroke-width:1.4}
+      .con{fill:#f3e8fd;stroke:#7b3fb5;stroke-width:1.4}
+      .prop{fill:#eeeeee;stroke:#777777;stroke-width:1.4;stroke-dasharray:4 3}
+    </style>
+  </defs>
+  <rect width="900" height="500" rx="16" fill="#f3efe6"/>
+  <rect width="900" height="500" rx="16" fill="url(#dots)"/>
+  <text x="32" y="38" class="kicker">05 / THE KNOWLEDGE GRAPH</text>
+  <text x="32" y="74" class="title">One month of a sample project</text>
+  <rect x="32" y="100" width="836" height="376" rx="12" class="shadow"/>
+  <rect x="32" y="96" width="836" height="376" rx="12" class="panel"/>
+
+  <!-- row 1 -->
+  <rect x="56" y="118" width="145" height="40" rx="8" class="dec"/><text x="128.5" y="138" dy="0.35em" text-anchor="middle" class="t">UUIDs as public ids</text>
+  <rect x="271" y="118" width="145" height="40" rx="8" class="arch"/><text x="343.5" y="138" dy="0.35em" text-anchor="middle" class="t">API layer</text>
+  <rect x="486" y="118" width="145" height="40" rx="8" class="arch"/><text x="558.5" y="138" dy="0.35em" text-anchor="middle" class="t">Billing service</text>
+  <rect x="701" y="118" width="145" height="40" rx="8" class="arch"/><text x="773.5" y="138" dy="0.35em" text-anchor="middle" class="t">Database layer</text>
+  <line x1="201" y1="138" x2="269" y2="138" class="edge" marker-end="url(#arrow)"/><text x="236" y="131" text-anchor="middle" class="rel">related</text>
+  <line x1="416" y1="138" x2="484" y2="138" class="edge" marker-end="url(#arrow)"/><text x="451" y="131" text-anchor="middle" class="rel">depends_on</text>
+  <line x1="631" y1="138" x2="699" y2="138" class="edge" marker-end="url(#arrow)"/><text x="666" y="131" text-anchor="middle" class="rel">depends_on</text>
+
+  <!-- row 2 -->
+  <rect x="271" y="178" width="145" height="40" rx="8" class="con"/><text x="343.5" y="198" dy="0.35em" text-anchor="middle" class="t">Active customer</text>
+  <line x1="416" y1="192" x2="514" y2="160" class="edge" marker-end="url(#arrow)"/><text x="470" y="193" text-anchor="middle" class="rel">related</text>
+
+  <!-- row 3 -->
+  <rect x="56" y="238" width="145" height="44" rx="8" class="les"/><text x="128.5" y="254" dy="0.35em" text-anchor="middle" class="t">Never query the DB</text><text x="128.5" y="269" dy="0.35em" text-anchor="middle" class="t">from routes</text>
+  <rect x="271" y="238" width="145" height="44" rx="8" class="dec"/><text x="343.5" y="254" dy="0.35em" text-anchor="middle" class="t">Three-layer</text><text x="343.5" y="269" dy="0.35em" text-anchor="middle" class="t">architecture</text>
+  <line x1="201" y1="260" x2="269" y2="260" class="edge" marker-end="url(#arrow)"/><text x="236" y="253" text-anchor="middle" class="rel">implements</text>
+
+  <!-- row 4 -->
+  <rect x="56" y="302" width="145" height="44" rx="8" class="sol"/><text x="128.5" y="318" dy="0.35em" text-anchor="middle" class="t">Flaky timezone</text><text x="128.5" y="333" dy="0.35em" text-anchor="middle" class="t">test</text>
+  <rect x="271" y="302" width="145" height="44" rx="8" class="les"/><text x="343.5" y="318" dy="0.35em" text-anchor="middle" class="t">Store timestamps</text><text x="343.5" y="333" dy="0.35em" text-anchor="middle" class="t">in UTC</text>
+  <line x1="201" y1="324" x2="269" y2="324" class="edge" marker-end="url(#arrow)"/><text x="236" y="317" text-anchor="middle" class="rel">fixes</text>
+
+  <!-- row 5 -->
+  <rect x="56" y="366" width="145" height="44" rx="8" class="prop"/><text x="128.5" y="382" dy="0.35em" text-anchor="middle" class="t">Proposal: hook</text><text x="128.5" y="397" dy="0.35em" text-anchor="middle" class="t">that blocks pip</text>
+  <rect x="271" y="366" width="145" height="44" rx="8" class="les"/><text x="343.5" y="388" dy="0.35em" text-anchor="middle" class="t">Use uv, not pip</text>
+  <rect x="486" y="366" width="145" height="44" rx="8" class="arch"/><text x="558.5" y="388" dy="0.35em" text-anchor="middle" class="t">Build system</text>
+  <line x1="201" y1="388" x2="269" y2="388" class="edge" marker-end="url(#arrow)"/><text x="236" y="381" text-anchor="middle" class="rel">related</text>
+  <line x1="416" y1="388" x2="484" y2="388" class="edge" marker-end="url(#arrow)"/><text x="451" y="381" text-anchor="middle" class="rel">depends_on</text>
+
+  <!-- right column notes -->
+  <text x="701" y="262" class="leg">Lessons carry a one-line</text>
+  <text x="701" y="278" class="leg">rule and trigger words;</text>
+  <text x="701" y="294" class="leg">the hook recalls them</text>
+  <text x="701" y="310" class="leg">when a prompt matches.</text>
+  <text x="701" y="342" class="leg">The proposal waits in</text>
+  <text x="701" y="358" class="leg">knowledge/_inbox until</text>
+  <text x="701" y="374" class="leg">you approve it in /curate.</text>
+
+  <!-- legend -->
+  <rect x="56" y="432" width="14" height="14" rx="3" class="arch"/><text x="76" y="443" class="leg">architecture</text>
+  <rect x="176" y="432" width="14" height="14" rx="3" class="dec"/><text x="196" y="443" class="leg">decision</text>
+  <rect x="276" y="432" width="14" height="14" rx="3" class="les"/><text x="296" y="443" class="leg">lesson</text>
+  <rect x="366" y="432" width="14" height="14" rx="3" class="sol"/><text x="386" y="443" class="leg">solution</text>
+  <rect x="466" y="432" width="14" height="14" rx="3" class="con"/><text x="486" y="443" class="leg">concept</text>
+  <rect x="561" y="432" width="14" height="14" rx="3" class="prop"/><text x="581" y="443" class="leg">proposal (not served until approved)</text>
+</svg>

@@ -1,0 +1,47 @@
+name: Bug report
+description: Something in the kit did not work as documented
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting. Please remove anything private (paths, names, prompts) before posting.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Install with ...
+        2. Run ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Hook errors and doctor output
+      description: Contents of `.claude/kit/state/hook-errors.log` (if any) and the output of `python .claude/kit/kg.py doctor`.
+      render: text
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: "kit 1.1.0, Claude Code 2.1.330, Python 3.12, Windows 11"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Install method
+      options:
+        - Plugin (/plugin install)
+        - install.ps1 / install.sh
+        - /kit-adopt
+    validations:
+      required: true

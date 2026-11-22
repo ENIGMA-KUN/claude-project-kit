@@ -35,7 +35,7 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-KIT_VERSION = "1.0.0"
+KIT_VERSION = "1.1.0"
 
 TYPE_DIRS = {
     "architecture": "architecture",
@@ -948,13 +948,13 @@ def mermaid(nodes: dict, limit: int = 150) -> str:
         if src in ids and dst in ids:
             lines.append(f"  {ids[src]} -->|{rel}| {ids[dst]}")
     lines += [
-        "  classDef lesson fill:#fde2e1,stroke:#c0392b",
-        "  classDef decision fill:#e1ecfd,stroke:#2c5aa0",
-        "  classDef architecture fill:#e6f4ea,stroke:#2e7d32",
-        "  classDef solution fill:#fff4d6,stroke:#b7791f",
-        "  classDef concept fill:#f3e8fd,stroke:#7b3fb5",
-        "  classDef procedure fill:#e0f4f4,stroke:#1f7a7a",
-        "  classDef proposal fill:#eeeeee,stroke:#777777,stroke-dasharray:4 3",
+        "  classDef lesson fill:#fde2e1,stroke:#c0392b,color:#1f1f1f",
+        "  classDef decision fill:#e1ecfd,stroke:#2c5aa0,color:#1f1f1f",
+        "  classDef architecture fill:#e6f4ea,stroke:#2e7d32,color:#1f1f1f",
+        "  classDef solution fill:#fff4d6,stroke:#b7791f,color:#1f1f1f",
+        "  classDef concept fill:#f3e8fd,stroke:#7b3fb5,color:#1f1f1f",
+        "  classDef procedure fill:#e0f4f4,stroke:#1f7a7a,color:#1f1f1f",
+        "  classDef proposal fill:#eeeeee,stroke:#777777,stroke-dasharray:4 3,color:#1f1f1f",
     ]
     return "\n".join(lines)
 

@@ -1,0 +1,31 @@
+name: Kit feedback from a real project
+description: How the kit behaved on your project; what /kit-init or /curate got wrong or missed
+labels: ["kit-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: Real-world reports are the main way the kit improves. Strip anything private before posting.
+  - type: input
+    id: project
+    attributes:
+      label: Kind of project
+      placeholder: "Python ML research repo, 40k lines, solo"
+    validations:
+      required: true
+  - type: textarea
+    id: missed
+    attributes:
+      label: What did not fit
+      description: What the kit got wrong, missed, or made harder. Include the note /kit-init or /curate wrote to kit-feedback.md if there is one.
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Doctor and signals
+      description: Output of `python .claude/kit/kg.py doctor` and `python .claude/kit/kg.py signals --days 14`, redacted.
+      render: text
+  - type: textarea
+    id: worked
+    attributes:
+      label: What worked well
