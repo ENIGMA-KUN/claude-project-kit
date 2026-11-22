@@ -66,7 +66,7 @@ def main() -> int:
                     "knowledge/decisions/use-project-kit.md", ".claude/constitution.md"]:
             check(f"installed {rel}", (project / rel).exists())
         settings = json.loads((project / ".claude/settings.json").read_text(encoding="utf-8"))
-        check("settings.json registers 7 hook events", len(settings.get("hooks", {})) == 7)
+        check("settings.json registers 8 hook events", len(settings.get("hooks", {})) == 8)
         cfg = json.loads((project / ".claude/kit/config.json").read_text(encoding="utf-8"))
         check("config records kit_home", cfg.get("kit_home") == str(KIT))
         check(".gitignore has kit block", "project-kit: local state" in (project / ".gitignore").read_text(encoding="utf-8"))
@@ -152,6 +152,83 @@ def main() -> int:
         lesson_row = next((r for r in sig["lessons"] if r["id"] == "lessons/use-uv-not-pip"), {})
         check("lesson effectiveness is measured", lesson_row.get("injected", 0) >= 1, json.dumps(lesson_row))
         check("signals are redacted on disk", "sk-a1B2" not in (project / ".claude/kit/signals/events.jsonl").read_text(encoding="utf-8"))
+
+        # ---------------------------------------------------------- task ledger
+        ledger_cli = [sys.executable, str(project / ".claude/kit/ledger.py")]
+
+        def ledger_json() -> dict:
+            return json.loads(run(ledger_cli + ["show", "--json"], project).stdout)
+
+        run(ledger_cli + ["goal", "Add rate limiting to the search endpoint"], project)
+        out = hook(project, "prompt", {**sid, "prompt": "ok, let's go with a sliding window instead of a fixed window"})
+        ctx = out.get("hookSpecificOutput", {}).get("additionalContext", "")
+        led = ledger_json()
+        d_user = next((d for d in led["decisions"] if "sliding window" in d["text"]), {})
+        check("user phrase becomes an approved decision", d_user.get("status") == "approved" and d_user.get("by") == "user", json.dumps(led["decisions"]))
+        check("prompt hook tells Claude the decision was recorded", "approved decision" in ctx, ctx)
+        out = hook(project, "prompt", {**sid, "prompt": "use pandas to load the csv file please"})
+        check("plain instruction is not taken as a decision", len(ledger_json()["decisions"]) == 1)
+
+        msg = ("Done with the limiter skeleton.\n\nDecision: key the limiter on the API key, because agents share one IP\n"
+               "Dead end: a global token bucket, because one noisy client starved the others\nNext: add the 429 test\n"
+               "```\nDecision: lines inside code blocks are ignored\n```")
+        hook(project, "stop", {"session_id": "smoke-ledger", "stop_hook_active": False, "last_assistant_message": msg})
+        led = ledger_json()
+        d_claude = next((d for d in led["decisions"] if "API key" in d["text"]), {})
+        check("Decision: line is filed as proposed with its reason", d_claude.get("status") == "proposed" and "share one IP" in d_claude.get("why", ""), json.dumps(led["decisions"]))
+        check("Dead end: and Next: lines are filed", led["dead_ends"] and led["dead_ends"][0]["text"].startswith("a global token bucket") and (led.get("next") or {}).get("text") == "add the 429 test")
+        check("markers inside code blocks are ignored", not any("ignored" in d["text"] for d in led["decisions"]))
+
+        ask = {**sid, "tool_name": "AskUserQuestion",
+               "tool_input": {"questions": [{"question": "Where should limiter state live?", "header": "Storage", "options": [], "multiSelect": False}]},
+               "tool_response": {"questions": [], "answers": {"Where should limiter state live?": "Redis"}}}
+        hook(project, "post-tool", ask)
+        d_ask = next((d for d in ledger_json()["decisions"] if d["text"].startswith("Storage")), {})
+        check("AskUserQuestion answer is filed as approved", d_ask.get("text") == "Storage: Redis" and d_ask.get("status") == "approved", json.dumps(d_ask))
+
+        tr = tmp / "transcript.jsonl"
+        base = {"sessionId": "smoke-ledger", "cwd": str(project), "timestamp": "2026-11-22T10:00:00"}
+        rows = [
+            {**base, "type": "user", "message": {"role": "user", "content": "Add rate limiting to the search endpoint so one client cannot flood it"}},
+            {**base, "type": "assistant", "message": {"role": "assistant", "content": [
+                {"type": "text", "text": "Looking at the endpoint first."},
+                {"type": "tool_use", "name": "Edit", "input": {"file_path": str(project / "src/demo/db.py")}}]}},
+            {**base, "type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t1", "content": "ok"}]}},
+            {**base, "type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Base directory for this skill: /x\n# Skill body"}]}},
+            {**base, "type": "user", "isMeta": True, "message": {"role": "user", "content": "meta noise"}},
+            {**base, "type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": msg}]}},
+            {**base, "type": "user", "message": {"role": "user", "content": "keep going and add the 429 test"}},
+        ]
+        tr.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+        hook(project, "pre-compact", {**sid, "trigger": "auto", "transcript_path": str(tr)})
+        briefs = list((project / ".claude/kit/briefs").glob("*.md"))
+        brief = briefs[0].read_text(encoding="utf-8") if briefs else ""
+        check("pre-compact writes a resume brief", bool(briefs))
+        check("brief has goal, latest request, files and decisions",
+              all(s in brief for s in ("Add rate limiting", "Latest request", "src/demo/db.py", "key the limiter on the API key", "check the files on disk")), brief[:600])
+        check("brief skips skill text, tool results and meta entries", "Skill body" not in brief and "meta noise" not in brief)
+
+        out = hook(project, "session-start", {"session_id": "smoke-3", "source": "compact"})
+        ctx = out.get("hookSpecificOutput", {}).get("additionalContext", "")
+        check("after compaction the ledger comes back", "Decisions" in ctx and "sliding window" in ctx and "PROPOSED" in ctx and "Dead ends" in ctx, ctx[-800:])
+        out = hook(project, "session-start", {"session_id": "smoke-4", "source": "clear"})
+        ctx = out.get("hookSpecificOutput", {}).get("additionalContext", "")
+        check("after /clear Claude is pointed to the ledger", "Task ledger for branch" in ctx and "after /clear" in ctx, ctx[-500:])
+
+        pid = d_claude.get("id", "D2")
+        run(ledger_cli + ["decide", "key anonymous users by IP", "--why", "they have no API key", "--status", "approved", "--by", "user"], project)
+        new_id = ledger_json()["decisions"][-1]["id"]
+        run(ledger_cli + ["status", pid, "superseded", "--by", new_id], project)
+        led = ledger_json()
+        old = next(d for d in led["decisions"] if d["id"] == pid)
+        check("change keeps history (superseded_by)", old["status"] == "superseded" and old["superseded_by"] == new_id, json.dumps(old))
+        rev = json.loads(run(ledger_cli + ["review", "--json"], project).stdout)
+        check("review lists no stale proposals after the change", all(d["id"] != pid for d in rev["proposed"]), json.dumps(rev["proposed"]))
+        res = run(ledger_cli + ["brief", "--transcript", str(tr), "--max-chars", "1500"], project)
+        check("brief respects its character budget", 0 < len(res.stdout) <= 1501, str(len(res.stdout)))
+        run(ledger_cli + ["archive"], project)
+        out = hook(project, "session-start", {"session_id": "smoke-5", "source": "clear"})
+        check("archived ledger is no longer offered", "Task ledger" not in json.dumps(out), json.dumps(out)[-300:])
 
         res = run(kg + ["doctor", "--json"], project)
         doc = json.loads(res.stdout)

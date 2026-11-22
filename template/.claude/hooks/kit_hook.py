@@ -8,9 +8,14 @@ Events:
   prompt         retrieve relevant knowledge nodes for the prompt; log user corrections
   pre-tool       deny or ask on destructive commands and on secrets written into knowledge
   tool-failure   log the failure; warn when the same failure repeats (loop budget)
-  pre-compact    log a context-pressure signal
-  stop           once per session, suggest /reflect when friction piled up
-  session-end    write a one-line session summary to the signal log
+  pre-compact    log a context-pressure signal and rebuild the resume brief
+  post-tool      store AskUserQuestion answers as approved decisions in the task ledger
+  stop           file Decision/Dead end/Next lines into the ledger; once per session, suggest /reflect
+  brief          rebuild the resume brief from the transcript (throttled, runs async on Stop)
+  session-end    write a one-line session summary to the signal log and rebuild the brief
+
+The task ledger (.claude/kit/ledger/<branch>.json) is put back into context by
+session-start after compaction, and pointed to after /clear or on a new session.
 
 Every handler fails open: an exception is written to .claude/kit/state/hook-errors.log
 and the session continues. Signals stay local (gitignored) and are redacted for secrets.
@@ -203,11 +208,51 @@ def on_session_start(data: dict) -> None:
     if recent >= 10 and (last is None or (dt.date.today() - last).days >= every):
         lines.append(f"Meta loop due: {recent} friction/usage events since the last /curate. Mention it to the user once.")
 
-    if source == "compact":
-        lines.append("Context was just compacted. If a task was in progress, re-read its loop contract in .claude/kit/contracts/ or the latest handoff before continuing.")
+    lines += ledger_context(source, cfg)
 
     if lines:
         emit({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "[project-kit]\n" + "\n".join(lines)}})
+
+
+def ledger_context(source: str, cfg: dict) -> list:
+    """Bring the task ledger back after compaction or /clear, or point to it on a new session."""
+    lcfg = cfg.get("ledger", {})
+    if not lcfg.get("enabled", True) or source == "resume":
+        return []
+    import ledger as lg  # noqa: PLC0415
+
+    led = lg.load(ROOT)
+    if lg.is_empty(led):
+        if source == "compact":
+            return ["Context was just compacted. If a task was in progress, re-read its loop contract in .claude/kit/contracts/ or the latest handoff before continuing."]
+        return []
+    slug = lg.branch_slug(ROOT)[0]
+    brief = f".claude/kit/briefs/{slug}.md"
+    if source == "compact":
+        return [
+            "Context was just compacted. The task ledger below was kept on disk and is more reliable than the summary for "
+            "decisions, dead ends and the next step. Approved decisions are settled: do not reopen them unless the user does. "
+            f"Proposed ones still need the user's yes. Full brief with recent turns: {brief}.",
+            lg.compact_context(led, int(lcfg.get("compact_inject_chars", 3000))).strip(),
+        ]
+    try:
+        updated = dt.datetime.fromisoformat(led.get("updated", "")[:19])
+        age_days = (dt.datetime.now() - updated).total_seconds() / 86400
+    except ValueError:
+        age_days = 0
+    if source == "startup" and age_days > float(lcfg.get("stale_days", 7)):
+        return []
+    approved = sum(1 for d in led["decisions"] if d["status"] == "approved")
+    proposed = sum(1 for d in led["decisions"] if d["status"] == "proposed")
+    goal = (led.get("goal") or {}).get("text", "")
+    nxt = (led.get("next") or {}).get("text", "")
+    why = "after /clear" if source == "clear" else f"updated {age_days:.0f} days ago"
+    return [
+        f"Task ledger for branch '{led.get('branch')}' ({why}): goal \"{goal[:160]}\"; {approved} approved and {proposed} proposed decisions; "
+        f"{len(led['dead_ends'])} dead ends" + (f"; next: {nxt[:120]}" if nxt else "") + ". "
+        f"If the user is continuing that work, read {brief} (or run `python .claude/kit/ledger.py show`) before acting. "
+        "If they started something new, ignore it; `python .claude/kit/ledger.py archive` closes it when the task is done."
+    ]
 
 
 def on_prompt(data: dict) -> None:
@@ -222,6 +267,26 @@ def on_prompt(data: dict) -> None:
             state["reflected"] = True
         save_state(sid, state)
         return
+
+    lcfg = cfg.get("ledger", {})
+    if lcfg.get("enabled", True) and not prompt.lstrip().startswith("/"):
+        try:
+            import ledger as lg  # noqa: PLC0415
+
+            led = lg.load(ROOT)
+            changed = False
+            if not led.get("goal") and len(prompt.split()) >= 6:
+                lg.set_goal(led, prompt[:600], "first request")
+                changed = True
+            if lcfg.get("capture_user_decisions", True):
+                for sentence in lg.user_decisions(prompt):
+                    did = lg.add_decision(led, sentence, "", "approved", "user", sid)
+                    context.append(f"Recorded in the task ledger as approved decision {did}: \"{sentence[:120]}\". Follow it in later steps.")
+                    changed = True
+            if changed:
+                lg.save(ROOT, led)
+        except Exception as exc:  # noqa: BLE001
+            note_error("prompt-ledger", exc)
 
     if CORRECTION_START.search(prompt) or CORRECTION_ANY.search(prompt):
         state["corrections"] = state.get("corrections", 0) + 1
@@ -376,14 +441,57 @@ def on_tool_failure(data: dict) -> None:
         )}})
 
 
+def refresh_brief(data: dict, force: bool) -> None:
+    """Rebuild the resume brief from the transcript. Throttled to every 2 minutes unless forced."""
+    lcfg = config().get("ledger", {})
+    transcript = str(data.get("transcript_path") or "")
+    if not lcfg.get("enabled", True) or not transcript:
+        return
+    import ledger as lg  # noqa: PLC0415
+
+    path = lg.brief_path(ROOT)
+    if not force and path.exists() and time.time() - path.stat().st_mtime < 120:
+        return
+    lg.write_brief(ROOT, transcript, int(lcfg.get("brief_max_chars", 8000)), short_session(data))
+
+
+def on_brief(data: dict) -> None:
+    refresh_brief(data, force=False)
+
+
 def on_pre_compact(data: dict) -> None:
     log_event({"event": "compact", "category": "performance", "session": short_session(data), "trigger": data.get("trigger", "")})
+    refresh_brief(data, force=True)
+
+
+def on_post_tool(data: dict) -> None:
+    """AskUserQuestion answers are the user's sign-off: store them as approved decisions."""
+    if data.get("tool_name") != "AskUserQuestion" or not config().get("ledger", {}).get("enabled", True):
+        return
+    import ledger as lg  # noqa: PLC0415
+
+    led = lg.load(ROOT)
+    ids = lg.record_answers(led, data.get("tool_input") or {}, data.get("tool_response"), short_session(data))
+    if ids:
+        lg.save(ROOT, led)
+        log_event({"event": "decision", "session": short_session(data), "source": "ask", "ids": ids})
 
 
 def on_stop(data: dict) -> None:
     if data.get("stop_hook_active"):
         return
     sid = short_session(data)
+    if config().get("ledger", {}).get("enabled", True):
+        try:
+            import ledger as lg  # noqa: PLC0415
+
+            led = lg.load(ROOT)
+            changes = lg.apply_markers(led, str(data.get("last_assistant_message") or ""), sid)
+            if changes:
+                lg.save(ROOT, led)
+                log_event({"event": "decision", "session": sid, "source": "markers", "ids": [c[1] for c in changes if c[0] == "decision"]})
+        except Exception as exc:  # noqa: BLE001
+            note_error("stop-ledger", exc)
     state = load_state(sid)
     if state.get("nudged") or state.get("reflected"):
         return
@@ -406,6 +514,7 @@ def on_session_end(data: dict) -> None:
         "failures": state.get("failures", 0), "corrections": state.get("corrections", 0),
         "injected": len(state.get("injected", [])), "reflected": bool(state.get("reflected")),
     })
+    refresh_brief(data, force=True)
 
 
 HANDLERS = {
@@ -414,7 +523,9 @@ HANDLERS = {
     "pre-tool": on_pre_tool,
     "tool-failure": on_tool_failure,
     "pre-compact": on_pre_compact,
+    "post-tool": on_post_tool,
     "stop": on_stop,
+    "brief": on_brief,
     "session-end": on_session_end,
 }
 

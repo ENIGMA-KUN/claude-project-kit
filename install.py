@@ -25,6 +25,7 @@ TEMPLATE = KIT_HOME / "template"
 # Upgraded in place (old copy backed up) on every install.
 MANAGED = [
     ".claude/kit/kg.py",
+    ".claude/kit/ledger.py",
     ".claude/hooks/kit_hook.py",
     ".claude/rules/knowledge-authoring.md",
     ".claude/agents/verifier.md",
@@ -37,17 +38,18 @@ MANAGED_PREFIXES = [".claude/skills/"]
 MERGE_VIA_INCOMING = ["CLAUDE.md", ".claude/settings.json", ".claude/constitution.md"]
 
 GITIGNORE_MARKER = "# project-kit: local state"
-GITIGNORE_BLOCK = f"""
-{GITIGNORE_MARKER}
-.claude/kit/signals/
-.claude/kit/state/
-.claude/kit/handoffs/
-.claude/kit/backup/
-.claude/kit/incoming/
-.claude/settings.local.json
-CLAUDE.local.md
-knowledge/_graph.json
-"""
+GITIGNORE_LINES = [
+    ".claude/kit/signals/",
+    ".claude/kit/state/",
+    ".claude/kit/handoffs/",
+    ".claude/kit/ledger/",
+    ".claude/kit/briefs/",
+    ".claude/kit/backup/",
+    ".claude/kit/incoming/",
+    ".claude/settings.local.json",
+    "CLAUDE.local.md",
+    "knowledge/_graph.json",
+]
 
 
 def is_managed(rel: str) -> bool:
@@ -150,10 +152,13 @@ def main() -> int:
 
     gi = target / ".gitignore"
     gi_text = gi.read_text(encoding="utf-8", errors="replace") if gi.exists() else ""
-    gi_added = GITIGNORE_MARKER not in gi_text
-    if gi_added and not args.dry_run:
+    present = {line.strip() for line in gi_text.splitlines()}
+    missing = [line for line in GITIGNORE_LINES if line not in present]
+    gi_added = bool(missing)
+    if missing and not args.dry_run:
+        block = ([GITIGNORE_MARKER] if GITIGNORE_MARKER not in present else []) + missing
         with gi.open("a", encoding="utf-8") as fh:
-            fh.write(("\n" if gi_text and not gi_text.endswith("\n") else "") + GITIGNORE_BLOCK)
+            fh.write(("\n" if gi_text and not gi_text.endswith("\n") else "") + "\n".join(block) + "\n")
 
     if args.global_ and not args.dry_run:
         skill = Path.home() / ".claude" / "skills" / "kit-adopt" / "SKILL.md"

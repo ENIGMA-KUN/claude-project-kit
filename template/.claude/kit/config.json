@@ -29,6 +29,13 @@
     "max_same_failure": 3,
     "max_attempts": 3
   },
+  "ledger": {
+    "enabled": true,
+    "capture_user_decisions": true,
+    "brief_max_chars": 8000,
+    "compact_inject_chars": 3000,
+    "stale_days": 7
+  },
   "reflect_nudge_threshold": 3,
   "curate_every_days": 7,
   "review_days": {

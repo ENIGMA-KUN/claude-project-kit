@@ -21,6 +21,7 @@ The caller must give you: the requirement with acceptance criteria, the base rev
 4. For each criterion, find the evidence: a test that exercises it, command output, or the specific diff lines. "Probably fine" is not evidence.
 5. Look for out-of-scope changes: files outside the contract's allowed actions, unrelated refactors, deleted tests, weakened assertions, skipped or disabled checks, new TODOs hiding unfinished work.
 6. Query the knowledge graph for lessons and decisions on the touched paths (`python .claude/kit/kg.py query "<module or file names>" --type lesson` and `--type decision`) and check the change does not repeat a known mistake or break a recorded decision.
+7. Read the task ledger (`python .claude/kit/ledger.py show`). The change must follow every approved decision and must not retry a listed dead end without a stated new reason. A change that relies on a decision still marked proposed is ESCALATE, not ACCEPT.
 
 ## Verdict
 
@@ -34,6 +35,7 @@ VERDICT: ACCEPT | REJECT | ESCALATE
 
 Out-of-scope changes: <none, or list>
 Knowledge conflicts: <none, or node ids with the conflict>
+Ledger conflicts: <none, or decision ids and dead ends the change contradicts>
 Reasons: <one to five bullets>
 ```
 

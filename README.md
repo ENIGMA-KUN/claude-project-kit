@@ -15,6 +15,7 @@ Drop it into a new or existing repository, run `/kit-init`, and Claude starts ev
 - [Situations where it helps](#situations-where-it-helps)
 - [A week with the kit](#a-week-with-the-kit)
 - [How it works](#how-it-works)
+- [Context resets and decisions](#context-resets-and-decisions)
 - [The knowledge graph](#the-knowledge-graph)
 - [Safety model](#safety-model)
 - [FAQ](#faq)
@@ -76,6 +77,8 @@ The installer never overwrites your files. If you already have a `CLAUDE.md` or 
 | `/reflect` | End-of-session retro: three to five items worth keeping |
 | `/curate` | Weekly meta loop: evidence-backed proposals, constitution check, you approve |
 | `/loop-contract` | Goal, budget, stop rule and verification written down before long or risky work |
+| Task ledger | Per-branch working memory on disk: goal, decisions with status, dead ends, next step. Comes back after compaction and `/clear` |
+| `/decide` | Save, change, review and approve decisions; promote lasting ones to the knowledge graph |
 | `/handoff` | Save state before stopping; resume tomorrow with the claims re-checked |
 | `/audit` | Quarterly clean-up of instruction debt and context budget |
 | `recall` | Lets Claude search the graph on its own when a task touches known ground |
@@ -95,6 +98,9 @@ The installer never overwrites your files. If you already have a `CLAUDE.md` or 
 | ML or research repo with notebooks and experiments | `/kit-init`, then `/learn` | Concepts for metrics and dataset splits, decisions on evaluation protocol, lessons on things like GPU memory or data leakage |
 | A long refactor or migration you want to run with little supervision | `/loop-contract migrate X to Y` | A written contract with allowed files, verification commands and an attempt budget, then an independent verifier verdict with evidence |
 | You stop mid-task and come back next week | `/handoff`, later `/handoff resume` | A resume that re-checks what was actually done instead of trusting the old summary |
+| Auto-compaction hits in the middle of a long task | nothing | The goal, approved decisions, dead ends and next step are put back into context right after compaction, so Claude does not reopen settled questions or retry what failed |
+| You run `/clear` to free context but keep working on the same branch | `/handoff resume` | A brief built from the transcript (original and latest request, files touched, recent turns) plus the ledger |
+| You want to sign off on Claude's choices before it builds on them | `/decide review` | Claude's proposed decisions listed with their reasons; approve, reject or change each one, and the history is kept |
 | Team repository | commit `knowledge/` | Shared, reviewable project memory in pull requests; each person's friction log stays on their machine |
 | Non-code work: a paper, docs site, research notes, data analysis | `/kit-init` in that folder | Concepts and decisions for the domain, and `/loop-contract` with a checklist as the verification step |
 | You use Claude Code in many repositories | `/kit-adopt` in each | One setup everywhere. Improvements a project discovers for the kit itself go to `FEEDBACK.md`, and re-running the installer upgrades every project |
@@ -125,6 +131,26 @@ Three design choices keep it from turning into a pile of rules:
 - Nothing promotes itself. Proposals carry evidence and wait for you. A proposal seen three times must be decided, so the loop cannot stay open.
 
 Hook events, retrieval settings, signal format and the proposal lifecycle are in [docs/how-it-works.md](docs/how-it-works.md).
+
+## Context resets and decisions
+
+<p align="center"><img src="docs/images/context-reset.svg" alt="Decision lines, user phrases, question answers and the transcript feed a task ledger that comes back after compaction or /clear" width="860"></p>
+
+Long sessions lose context twice: when Claude Code compacts the conversation, and when you `/clear` it yourself. Git keeps the files, but not the current goal, what was decided and why, or what was already tried and failed. A fresh context tends to reopen settled questions and retry the obvious approach that already broke.
+
+The kit keeps a task ledger per git branch in `.claude/kit/ledger/`, filled mostly by hooks:
+
+| Source | Recorded as |
+|--------|-------------|
+| Claude writes `Decision: key the limiter on the API key, because agents share one IP` | proposed decision with its reason |
+| Claude writes `Dead end: ...` or `Next: ...` | dead end, next step |
+| You write "let's go with the sliding window" or "use uv instead of pip" | approved decision |
+| You answer an AskUserQuestion prompt | approved decision |
+| PreCompact, Stop (every 2 minutes at most) and SessionEnd | a resume brief built from the transcript: original and latest request, files touched, recent turns, within 8,000 characters |
+
+After auto-compaction, the open part of the ledger goes straight back into context, marked as more reliable than the summary. After `/clear`, Claude gets a one-line pointer and uses the brief only if you continue that task. A new session on the same branch gets the same pointer; `/handoff resume` loads everything and checks it against the files on disk.
+
+`/decide` is the manual side: record a decision on purpose, `review` to approve or reject Claude's proposals in one batch, `change D2 "..."` to replace a decision while keeping the old one as superseded, and `promote D2` to turn a task decision into a permanent knowledge node. The `verifier` agent rejects work that contradicts an approved decision or retries a recorded dead end.
 
 ## The knowledge graph
 
@@ -193,7 +219,7 @@ Full schema: [template/knowledge/_schema.md](template/knowledge/_schema.md).
 
 - Destructive commands: recursive deletes of root or home folders, force pushes to main or master and disk-level commands are denied; `git reset --hard`, `git clean`, destructive SQL, publishing and anything touching credential files ask first.
 - Secrets: writes into `knowledge/`, `CLAUDE.md`, `.claude/rules`, `.claude/skills` and `.claude/agents` are scanned and denied on a match. The scan reports the kind of secret, never the value.
-- Privacy: the friction log stays on your machine (`.claude/kit/signals/`, gitignored), is redacted before writing, and the hooks make no network calls.
+- Privacy: the friction log, task ledgers and resume briefs stay on your machine (`.claude/kit/signals/`, `ledger/`, `briefs/`, all gitignored), signals are redacted before writing, and the hooks make no network calls.
 - Untrusted input: facts from web pages, issues or other tools enter the graph only as candidates, which are never served to sessions until approved.
 - Approval: the constitution says nothing reaches `CLAUDE.md`, rules, skills, hooks or settings without your yes, and a hook asks before anything edits the constitution.
 - Failure mode: hooks fail open. A kit bug logs to `.claude/kit/state/hook-errors.log` and never blocks your session.
@@ -215,6 +241,10 @@ Yes. It was built and tested on Windows 11 with Git Bash, which is what Claude C
 ### Other agents (Cursor, Codex, Gemini CLI)?
 
 The knowledge graph is plain Markdown that any agent can read, and [INIT_PROMPT.md](INIT_PROMPT.md) has paste-in prompts for agents without skills. The hooks are Claude Code only.
+
+### How does this compare with AgentDrive?
+
+[AgentDrive](https://agentdrive.sh) syncs whole sessions so a different agent (Codex, Cursor, OpenCode) or another machine can resume them, with a brief of the first message, files touched and recent turns. This kit works on one machine and one agent, and focuses on what that brief leaves to chance: the current goal, decisions with their status and reason, dead ends and the next step, plus your sign-off. They combine well: use AgentDrive to move between agents, and the ledger so each agent knows what was decided.
 
 ### How do I know it actually helps?
 
@@ -244,9 +274,9 @@ template/                 what gets copied into a project
   .claude/settings.json   hook registration and deny rules
   .claude/constitution.md
   .claude/hooks/kit_hook.py
-  .claude/kit/            kg.py engine, config.json, contracts/
+  .claude/kit/            kg.py (graph), ledger.py (task ledger and brief), config.json, contracts/
   .claude/rules/          knowledge-authoring.md (loads only for knowledge/)
-  .claude/skills/         kit-init, learn, reflect, curate, recall, handoff, loop-contract, audit
+  .claude/skills/         kit-init, learn, reflect, curate, recall, decide, handoff, loop-contract, audit
   .claude/agents/         verifier, curator
 ```
 

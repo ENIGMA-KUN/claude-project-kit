@@ -32,6 +32,7 @@ Your memory file holds what you learned in earlier rounds (patterns that turned 
 4. Staleness and drift: nodes past `review_by`, nodes whose `paths` vanished, CLAUDE.md commands or paths that no longer exist.
 5. Contradictions: active nodes linked by `contradicts`, or rules that say opposite things.
 6. Ejection: active lessons never injected in the window and with no recurrence; propose archive or a longer review date, never deletion.
+7. Task ledgers: read `.claude/kit/ledger/*.json` and `.claude/kit/ledger/archive/*.json`. A dead end that appears in two or more ledgers is a lesson candidate. An approved decision that several tasks relied on, and that is not yet `promoted`, is a decision-node candidate.
 
 ## Control ladder
 

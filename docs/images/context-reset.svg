@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="900" height="520" role="img" aria-labelledby="t d">
+  <title id="t">Decisions survive compaction and /clear</title>
+  <desc id="d">During a session, Claude's Decision lines, your own decision phrases, your AskUserQuestion answers and the transcript feed a task ledger on disk. /decide review approves, rejects or changes entries. After auto-compaction the ledger is put back into context; after /clear Claude gets a pointer to the brief; a new session resumes with /handoff resume.</desc>
+  <defs>
+    <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="0.9" fill="#e3d9c8"/></pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a64b3c"/></marker>
+    <style>
+      .kicker{font:700 11px Helvetica,Arial,sans-serif;letter-spacing:2px;fill:#a8473a}
+      .title{font:700 30px "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:-0.6px;fill:#1f1f1f}
+      .node{fill:#f4e1d2;stroke:#a65544;stroke-width:1.4}
+      .key{fill:#a8473a;stroke:#7a3328;stroke-width:1.4}
+      .label{font:700 11px Helvetica,Arial,sans-serif;fill:#262626;letter-spacing:0.4px}
+      .keylabel{font:700 12px Helvetica,Arial,sans-serif;fill:#ffffff;letter-spacing:0.5px}
+      .note{font:400 12px Helvetica,Arial,sans-serif;fill:#5b5149}
+      .edge{stroke:#a64b3c;stroke-width:2;fill:none}
+      .panel{fill:#fbfaf6;stroke:#b98474;stroke-width:1.2}
+      .shadow{fill:#e5dbcd}
+    </style>
+  </defs>
+  <rect width="900" height="520" rx="16" fill="#f3efe6"/>
+  <rect width="900" height="520" rx="16" fill="url(#dots)"/>
+  <text x="32" y="38" class="kicker">04 / CONTEXT RESETS</text>
+  <text x="32" y="74" class="title">Decisions survive compaction and /clear</text>
+
+  <!-- During the session -->
+  <rect x="32" y="104" width="836" height="120" rx="12" class="shadow"/>
+  <rect x="32" y="100" width="836" height="120" rx="12" class="panel"/>
+  <text x="54" y="124" class="kicker">DURING THE SESSION</text>
+  <rect x="66" y="138" width="170" height="36" rx="8" class="node"/><text x="151" y="156" dy="0.35em" text-anchor="middle" class="label">"DECISION:" LINES</text>
+  <rect x="266" y="138" width="170" height="36" rx="8" class="node"/><text x="351" y="156" dy="0.35em" text-anchor="middle" class="label">"LET'S GO WITH..."</text>
+  <rect x="466" y="138" width="170" height="36" rx="8" class="node"/><text x="551" y="156" dy="0.35em" text-anchor="middle" class="label">QUESTION ANSWERS</text>
+  <rect x="666" y="138" width="170" height="36" rx="8" class="node"/><text x="751" y="156" dy="0.35em" text-anchor="middle" class="label">TRANSCRIPT</text>
+  <text x="151" y="195" text-anchor="middle" class="note">Claude writes: proposed</text>
+  <text x="351" y="195" text-anchor="middle" class="note">you say it: approved</text>
+  <text x="551" y="195" text-anchor="middle" class="note">you choose: approved</text>
+  <text x="751" y="195" text-anchor="middle" class="note">files and recent turns</text>
+
+  <!-- Ledger -->
+  <line x1="151" y1="222" x2="380" y2="252" class="edge" marker-end="url(#arrow)"/>
+  <line x1="351" y1="222" x2="420" y2="252" class="edge" marker-end="url(#arrow)"/>
+  <line x1="551" y1="222" x2="470" y2="252" class="edge" marker-end="url(#arrow)"/>
+  <line x1="751" y1="222" x2="515" y2="252" class="edge" marker-end="url(#arrow)"/>
+  <rect x="330" y="254" width="240" height="46" rx="10" class="key"/>
+  <text x="450" y="277" dy="0.35em" text-anchor="middle" class="keylabel">TASK LEDGER, ON DISK</text>
+  <rect x="650" y="259" width="170" height="36" rx="8" class="node"/><text x="735" y="277" dy="0.35em" text-anchor="middle" class="label">/DECIDE REVIEW</text>
+  <line x1="574" y1="277" x2="646" y2="277" class="edge" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="735" y="314" text-anchor="middle" class="note">approve, reject, change</text>
+  <text x="66" y="272" class="note">goal, decisions with status,</text>
+  <text x="66" y="288" class="note">dead ends, next step, per branch</text>
+
+  <!-- After a reset -->
+  <rect x="32" y="344" width="836" height="156" rx="12" class="shadow"/>
+  <rect x="32" y="340" width="836" height="156" rx="12" class="panel"/>
+  <text x="54" y="364" class="kicker">AFTER A RESET</text>
+  <line x1="420" y1="302" x2="190" y2="378" class="edge" marker-end="url(#arrow)"/>
+  <line x1="450" y1="302" x2="450" y2="378" class="edge" marker-end="url(#arrow)"/>
+  <line x1="480" y1="302" x2="710" y2="378" class="edge" marker-end="url(#arrow)"/>
+  <rect x="90" y="380" width="200" height="36" rx="8" class="node"/><text x="190" y="398" dy="0.35em" text-anchor="middle" class="label">AUTO-COMPACTION</text>
+  <rect x="350" y="380" width="200" height="36" rx="8" class="node"/><text x="450" y="398" dy="0.35em" text-anchor="middle" class="label">/CLEAR</text>
+  <rect x="610" y="380" width="200" height="36" rx="8" class="node"/><text x="710" y="398" dy="0.35em" text-anchor="middle" class="label">NEW SESSION</text>
+  <text x="190" y="440" text-anchor="middle" class="note">ledger put back in context:</text>
+  <text x="190" y="456" text-anchor="middle" class="note">goal, decisions, dead ends, next</text>
+  <text x="450" y="440" text-anchor="middle" class="note">a pointer to the brief;</text>
+  <text x="450" y="456" text-anchor="middle" class="note">used only if you continue</text>
+  <text x="710" y="440" text-anchor="middle" class="note">/handoff resume reads ledger</text>
+  <text x="710" y="456" text-anchor="middle" class="note">and brief, then checks the disk</text>
+</svg>

@@ -48,6 +48,18 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/kit_hook.py\" post-tool",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PostToolUseFailure": [
       {
         "hooks": [
@@ -65,7 +77,7 @@
           {
             "type": "command",
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/kit_hook.py\" pre-compact",
-            "timeout": 10
+            "timeout": 30
           }
         ]
       }
@@ -77,6 +89,12 @@
             "type": "command",
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/kit_hook.py\" stop",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/kit_hook.py\" brief",
+            "async": true,
+            "timeout": 60
           }
         ]
       }
@@ -87,7 +105,7 @@
           {
             "type": "command",
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/kit_hook.py\" session-end",
-            "timeout": 5
+            "timeout": 10
           }
         ]
       }
