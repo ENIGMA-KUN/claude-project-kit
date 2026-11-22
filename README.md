@@ -1,5 +1,6 @@
 # Claude project kit
 
+[![test](https://github.com/ENIGMA-KUN/claude-project-kit/actions/workflows/test.yml/badge.svg)](https://github.com/ENIGMA-KUN/claude-project-kit/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-a8473a.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-1.1.0-a8473a.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-a8473a.svg)
