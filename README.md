@@ -21,11 +21,9 @@ Drop it into a new or existing repository, run `/kit-init`, and Claude starts ev
 
 Narrated walkthrough with every diagram animated: the problem, setup, the loops, context resets and the knowledge graph.
 
-
-
 https://github.com/user-attachments/assets/90834dc6-7b6e-4c86-a415-e7bcba96feb1
 
-
+Download: [MP4, 720p, 6 MB](docs/media/claude-project-kit-explainer.mp4)
 
 <p align="center"><img src="docs/images/why.svg" alt="Without the kit you correct the same mistake every session; with the kit the first correction becomes a lesson that later sessions recall" width="860"></p>
 
@@ -309,7 +307,7 @@ install.ps1, install.sh   launchers that find Python and call install.py
 install.py                the installer (never overwrites your files)
 INIT_PROMPT.md            the init prompt for manual use or other agents
 FEEDBACK.md               improvements to the kit collected from projects
-docs/                     how-it-works reference and diagrams
+docs/                     how-it-works reference, diagrams, explainer video
 examples/sample-project/  a filled-in knowledge graph to explore
 tests/smoke_test.py       end-to-end test of the installer, engine and every hook
 template/                 what gets copied into a project

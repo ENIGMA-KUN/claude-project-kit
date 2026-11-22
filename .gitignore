@@ -6,3 +6,7 @@ Thumbs.db
 .idea/
 .vscode/
 examples/sample-project/knowledge/_graph.json
+
+# local video production (build scripts, render cache, logs) stays off the repo
+/video/
+*.log
