@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 570" width="900" height="570" role="img" aria-labelledby="t d">
+  <title id="t">Three feedback loops</title>
+  <desc id="d">Inner loop on every prompt: recall, work, verify, with a three-try limit. Session loop: corrections and reflections become knowledge. Meta loop weekly: signals become proposals that you approve before anything changes.</desc>
+  <defs>
+    <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="0.9" fill="#e3d9c8"/></pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a64b3c"/></marker>
+    <style>
+      .kicker{font:700 11px Helvetica,Arial,sans-serif;letter-spacing:2px;fill:#a8473a}
+      .title{font:700 30px "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:-0.6px;fill:#1f1f1f}
+      .h{font:700 19px "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:-0.3px;fill:#1f1f1f}
+      .node{fill:#f4e1d2;stroke:#a65544;stroke-width:1.4}
+      .key{fill:#a8473a;stroke:#7a3328;stroke-width:1.4}
+      .label{font:700 11px Helvetica,Arial,sans-serif;fill:#262626;letter-spacing:0.4px}
+      .keylabel{font:700 11px Helvetica,Arial,sans-serif;fill:#ffffff;letter-spacing:0.4px}
+      .note{font:400 12px Helvetica,Arial,sans-serif;fill:#5b5149}
+      .tiny{font:700 10px Helvetica,Arial,sans-serif;fill:#a8473a;letter-spacing:0.6px}
+      .edge{stroke:#a64b3c;stroke-width:2;fill:none}
+      .panel{fill:#fbfaf6;stroke:#b98474;stroke-width:1.2}
+      .shadow{fill:#e5dbcd}
+    </style>
+  </defs>
+  <rect width="900" height="570" rx="16" fill="#f3efe6"/>
+  <rect width="900" height="570" rx="16" fill="url(#dots)"/>
+  <text x="32" y="38" class="kicker">03 / HOW IT LEARNS</text>
+  <text x="32" y="74" class="title">Three feedback loops, you stay in charge</text>
+
+  <!-- Lane 1 -->
+  <rect x="32" y="104" width="836" height="136" rx="12" class="shadow"/>
+  <rect x="32" y="100" width="836" height="136" rx="12" class="panel"/>
+  <text x="54" y="134" class="kicker">EVERY PROMPT</text>
+  <text x="54" y="160" class="h">Inner loop</text>
+  <text x="54" y="182" class="note">automatic, via hooks</text>
+  <rect x="250" y="146" width="110" height="36" rx="8" class="node"/><text x="305" y="164" dy="0.35em" text-anchor="middle" class="label">PROMPT</text>
+  <rect x="400" y="146" width="110" height="36" rx="8" class="key"/><text x="455" y="164" dy="0.35em" text-anchor="middle" class="keylabel">RECALL</text>
+  <rect x="550" y="146" width="110" height="36" rx="8" class="node"/><text x="605" y="164" dy="0.35em" text-anchor="middle" class="label">WORK</text>
+  <rect x="700" y="146" width="110" height="36" rx="8" class="node"/><text x="755" y="164" dy="0.35em" text-anchor="middle" class="label">VERIFY</text>
+  <line x1="360" y1="164" x2="398" y2="164" class="edge" marker-end="url(#arrow)"/>
+  <line x1="510" y1="164" x2="548" y2="164" class="edge" marker-end="url(#arrow)"/>
+  <line x1="660" y1="164" x2="698" y2="164" class="edge" marker-end="url(#arrow)"/>
+  <path d="M 755 146 C 755 120, 605 120, 605 144" class="edge" marker-end="url(#arrow)"/>
+  <text x="680" y="118" text-anchor="middle" class="tiny">MAX 3 TRIES</text>
+  <text x="250" y="206" class="note">Matching lessons are added to the prompt. Identical failures stop at three.</text>
+  <text x="250" y="223" class="note">Destructive commands and secrets are blocked before they run.</text>
+
+  <!-- Lane 2 -->
+  <rect x="32" y="260" width="836" height="136" rx="12" class="shadow"/>
+  <rect x="32" y="256" width="836" height="136" rx="12" class="panel"/>
+  <text x="54" y="290" class="kicker">EVERY SESSION</text>
+  <text x="54" y="316" class="h">Session loop</text>
+  <text x="54" y="338" class="note">you trigger, Claude offers</text>
+  <rect x="250" y="290" width="110" height="36" rx="8" class="node"/><text x="305" y="308" dy="0.35em" text-anchor="middle" class="label">YOU CORRECT</text>
+  <rect x="400" y="290" width="110" height="36" rx="8" class="node"/><text x="455" y="308" dy="0.35em" text-anchor="middle" class="label">/LEARN</text>
+  <rect x="550" y="290" width="110" height="36" rx="8" class="key"/><text x="605" y="308" dy="0.35em" text-anchor="middle" class="keylabel">KNOWLEDGE</text>
+  <rect x="700" y="290" width="110" height="36" rx="8" class="node"/><text x="755" y="308" dy="0.35em" text-anchor="middle" class="label">/REFLECT</text>
+  <line x1="360" y1="308" x2="398" y2="308" class="edge" marker-end="url(#arrow)"/>
+  <line x1="510" y1="308" x2="548" y2="308" class="edge" marker-end="url(#arrow)"/>
+  <line x1="698" y1="308" x2="662" y2="308" class="edge" marker-end="url(#arrow)"/>
+  <text x="250" y="362" class="note">A correction becomes a lesson with a one-line rule and trigger words.</text>
+  <text x="250" y="379" class="note">At the end of a session, /reflect turns what happened into 3 to 5 items.</text>
+
+  <!-- Lane 3 -->
+  <rect x="32" y="416" width="836" height="136" rx="12" class="shadow"/>
+  <rect x="32" y="412" width="836" height="136" rx="12" class="panel"/>
+  <text x="54" y="446" class="kicker">EVERY WEEK</text>
+  <text x="54" y="472" class="h">Meta loop</text>
+  <text x="54" y="494" class="note">you approve each change</text>
+  <rect x="250" y="446" width="110" height="36" rx="8" class="node"/><text x="305" y="464" dy="0.35em" text-anchor="middle" class="label">SIGNALS</text>
+  <rect x="400" y="446" width="110" height="36" rx="8" class="node"/><text x="455" y="464" dy="0.35em" text-anchor="middle" class="label">/CURATE</text>
+  <rect x="550" y="446" width="110" height="36" rx="8" class="key"/><text x="605" y="464" dy="0.35em" text-anchor="middle" class="keylabel">YOU APPROVE</text>
+  <rect x="700" y="446" width="110" height="36" rx="8" class="node"/><text x="755" y="464" dy="0.35em" text-anchor="middle" class="label">UPGRADE</text>
+  <line x1="360" y1="464" x2="398" y2="464" class="edge" marker-end="url(#arrow)"/>
+  <line x1="510" y1="464" x2="548" y2="464" class="edge" marker-end="url(#arrow)"/>
+  <line x1="660" y1="464" x2="698" y2="464" class="edge" marker-end="url(#arrow)"/>
+  <text x="250" y="518" class="note">Failures and corrections are mined into proposals with evidence. A repeat</text>
+  <text x="250" y="535" class="note">mistake gets a stronger control: a test, lint rule or hook, not more prose.</text>
+</svg>

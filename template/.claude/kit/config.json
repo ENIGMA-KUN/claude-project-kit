@@ -1,0 +1,43 @@
+{
+  "kit_version": "1.0.0",
+  "kit_home": "",
+  "python": "python",
+  "initialized": false,
+  "initialized_on": null,
+  "last_refresh": null,
+  "last_curate": null,
+  "project": {
+    "name": "",
+    "kind": "",
+    "stage": "",
+    "languages": []
+  },
+  "verify": {
+    "test": "",
+    "lint": "",
+    "typecheck": "",
+    "build": "",
+    "fast": ""
+  },
+  "retrieval": {
+    "enabled": true,
+    "max_nodes": 3,
+    "min_score": 3.0,
+    "min_terms": 2
+  },
+  "loop": {
+    "max_same_failure": 3,
+    "max_attempts": 3
+  },
+  "reflect_nudge_threshold": 3,
+  "curate_every_days": 7,
+  "review_days": {
+    "architecture": 60,
+    "decision": 180,
+    "lesson": 90,
+    "solution": 120,
+    "concept": 180,
+    "procedure": 90,
+    "proposal": 30
+  }
+}

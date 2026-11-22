@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 270" width="900" height="270" role="img" aria-labelledby="t d">
+  <title id="t">Quick start</title>
+  <desc id="d">Clone the kit once, install it into a project with one command, run /kit-init, then work normally while hooks recall and log; /curate weekly feeds improvements back into the work.</desc>
+  <defs>
+    <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="0.9" fill="#e3d9c8"/></pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a64b3c"/></marker>
+    <style>
+      .kicker{font:700 11px Helvetica,Arial,sans-serif;letter-spacing:2px;fill:#a8473a}
+      .title{font:700 30px "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:-0.6px;fill:#1f1f1f}
+      .node{fill:#f4e1d2;stroke:#a65544;stroke-width:1.4}
+      .label{font:700 11px Helvetica,Arial,sans-serif;fill:#262626;letter-spacing:0.4px}
+      .note{font:400 12px Helvetica,Arial,sans-serif;fill:#5b5149}
+      .edge{stroke:#a64b3c;stroke-width:2;fill:none}
+      .panel{fill:#fbfaf6;stroke:#b98474;stroke-width:1.2}
+      .shadow{fill:#e5dbcd}
+    </style>
+  </defs>
+  <rect width="900" height="270" rx="16" fill="#f3efe6"/>
+  <rect width="900" height="270" rx="16" fill="url(#dots)"/>
+  <text x="32" y="38" class="kicker">QUICK START</text>
+  <text x="32" y="74" class="title">Plug in, adapt, then it learns</text>
+  <rect x="32" y="98" width="836" height="146" rx="12" class="shadow"/>
+  <rect x="32" y="94" width="836" height="146" rx="12" class="panel"/>
+
+  <path d="M 769 134 C 769 106, 609 106, 609 134" class="edge" marker-end="url(#arrow)"/>
+
+  <rect x="72" y="134" width="118" height="40" rx="8" class="node"/>
+  <text x="131" y="154" dy="0.35em" text-anchor="middle" class="label">GIT CLONE</text>
+  <text x="131" y="202" text-anchor="middle" class="note">once, anywhere</text>
+
+  <rect x="231.5" y="134" width="118" height="40" rx="8" class="node"/>
+  <text x="290.5" y="154" dy="0.35em" text-anchor="middle" class="label">INSTALL</text>
+  <text x="290.5" y="202" text-anchor="middle" class="note">one command</text>
+  <text x="290.5" y="219" text-anchor="middle" class="note">per project</text>
+
+  <rect x="391" y="134" width="118" height="40" rx="8" class="node"/>
+  <text x="450" y="154" dy="0.35em" text-anchor="middle" class="label">/KIT-INIT</text>
+  <text x="450" y="202" text-anchor="middle" class="note">reads the repo,</text>
+  <text x="450" y="219" text-anchor="middle" class="note">asks 4 questions max</text>
+
+  <rect x="550.5" y="134" width="118" height="40" rx="8" class="node"/>
+  <text x="609.5" y="154" dy="0.35em" text-anchor="middle" class="label">WORK</text>
+  <text x="609.5" y="202" text-anchor="middle" class="note">hooks recall lessons</text>
+  <text x="609.5" y="219" text-anchor="middle" class="note">and log friction</text>
+
+  <rect x="710" y="134" width="118" height="40" rx="8" class="node"/>
+  <text x="769" y="154" dy="0.35em" text-anchor="middle" class="label">/CURATE</text>
+  <text x="769" y="202" text-anchor="middle" class="note">weekly, you approve,</text>
+  <text x="769" y="219" text-anchor="middle" class="note">next week is better</text>
+
+  <line x1="190" y1="154" x2="229" y2="154" class="edge" marker-end="url(#arrow)"/>
+  <line x1="349.5" y1="154" x2="389" y2="154" class="edge" marker-end="url(#arrow)"/>
+  <line x1="509" y1="154" x2="548.5" y2="154" class="edge" marker-end="url(#arrow)"/>
+  <line x1="668.5" y1="154" x2="708" y2="154" class="edge" marker-end="url(#arrow)"/>
+</svg>

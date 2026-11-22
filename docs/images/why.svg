@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" width="900" height="540" role="img" aria-labelledby="t d">
+  <title id="t">Why the kit exists</title>
+  <desc id="d">Without the kit, every session starts from zero and you correct the same mistake each time. With the kit, the first correction becomes a lesson in the knowledge graph, and later sessions recall it.</desc>
+  <defs>
+    <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="0.9" fill="#e3d9c8"/></pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a64b3c"/></marker>
+    <style>
+      .kicker{font:700 11px Helvetica,Arial,sans-serif;letter-spacing:2px;fill:#a8473a}
+      .title{font:700 30px "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:-0.6px;fill:#1f1f1f}
+      .node{fill:#f4e1d2;stroke:#a65544;stroke-width:1.4}
+      .label{font:700 11px Helvetica,Arial,sans-serif;fill:#262626;letter-spacing:0.4px}
+      .note{font:400 12px Helvetica,Arial,sans-serif;fill:#5b5149}
+      .edge{stroke:#a64b3c;stroke-width:2;fill:none}
+      .panel{fill:#fbfaf6;stroke:#b98474;stroke-width:1.2}
+      .shadow{fill:#e5dbcd}
+      .bad{fill:#a8473a}
+      .badtext{font:700 11px Helvetica,Arial,sans-serif;fill:#ffffff;letter-spacing:0.3px}
+      .good{fill:#efe9dc;stroke:#a65544;stroke-width:1;stroke-dasharray:3 3}
+      .goodtext{font:700 11px Helvetica,Arial,sans-serif;fill:#7a3328;letter-spacing:0.3px}
+    </style>
+  </defs>
+  <rect width="900" height="540" rx="16" fill="#f3efe6"/>
+  <rect width="900" height="540" rx="16" fill="url(#dots)"/>
+  <text x="32" y="38" class="kicker">01 / WHY</text>
+  <text x="32" y="74" class="title">Stop correcting the same mistake twice</text>
+
+  <!-- Without the kit -->
+  <rect x="32" y="102" width="836" height="160" rx="12" class="shadow"/>
+  <rect x="32" y="98" width="836" height="160" rx="12" class="panel"/>
+  <text x="56" y="126" class="kicker">WITHOUT THE KIT</text>
+  <text x="56" y="146" class="note">every session starts from zero</text>
+
+  <rect x="290" y="118" width="140" height="40" rx="8" class="node"/>
+  <text x="360" y="138" dy="0.35em" text-anchor="middle" class="label">SESSION 1</text>
+  <rect x="490" y="118" width="140" height="40" rx="8" class="node"/>
+  <text x="560" y="138" dy="0.35em" text-anchor="middle" class="label">SESSION 2</text>
+  <rect x="690" y="118" width="140" height="40" rx="8" class="node"/>
+  <text x="760" y="138" dy="0.35em" text-anchor="middle" class="label">SESSION 3</text>
+  <line x1="430" y1="138" x2="488" y2="138" class="edge" marker-end="url(#arrow)"/>
+  <line x1="630" y1="138" x2="688" y2="138" class="edge" marker-end="url(#arrow)"/>
+
+  <rect x="296" y="186" width="128" height="26" rx="13" class="bad"/>
+  <text x="360" y="199" dy="0.35em" text-anchor="middle" class="badtext">you correct it</text>
+  <rect x="496" y="186" width="128" height="26" rx="13" class="bad"/>
+  <text x="560" y="199" dy="0.35em" text-anchor="middle" class="badtext">same mistake</text>
+  <rect x="696" y="186" width="128" height="26" rx="13" class="bad"/>
+  <text x="760" y="199" dy="0.35em" text-anchor="middle" class="badtext">same mistake</text>
+  <line x1="360" y1="158" x2="360" y2="184" class="edge"/>
+  <line x1="560" y1="158" x2="560" y2="184" class="edge"/>
+  <line x1="760" y1="158" x2="760" y2="184" class="edge"/>
+  <text x="56" y="236" class="note">the fix lives only in a chat that is gone</text>
+
+  <!-- With the kit -->
+  <rect x="32" y="292" width="836" height="220" rx="12" class="shadow"/>
+  <rect x="32" y="288" width="836" height="220" rx="12" class="panel"/>
+  <text x="56" y="316" class="kicker">WITH THE KIT</text>
+  <text x="56" y="336" class="note">each session builds on the last</text>
+
+  <rect x="290" y="308" width="140" height="40" rx="8" class="node"/>
+  <text x="360" y="328" dy="0.35em" text-anchor="middle" class="label">SESSION 1</text>
+  <rect x="490" y="308" width="140" height="40" rx="8" class="node"/>
+  <text x="560" y="328" dy="0.35em" text-anchor="middle" class="label">SESSION 2</text>
+  <rect x="690" y="308" width="140" height="40" rx="8" class="node"/>
+  <text x="760" y="328" dy="0.35em" text-anchor="middle" class="label">SESSION 3</text>
+  <line x1="430" y1="328" x2="488" y2="328" class="edge" marker-end="url(#arrow)"/>
+  <line x1="630" y1="328" x2="688" y2="328" class="edge" marker-end="url(#arrow)"/>
+
+  <rect x="286" y="370" width="148" height="26" rx="13" class="bad"/>
+  <text x="360" y="383" dy="0.35em" text-anchor="middle" class="badtext">you correct it, /learn</text>
+  <line x1="360" y1="348" x2="360" y2="368" class="edge"/>
+  <line x1="360" y1="396" x2="360" y2="440" class="edge" marker-end="url(#arrow)"/>
+
+  <rect x="496" y="370" width="128" height="26" rx="13" class="good"/>
+  <text x="560" y="383" dy="0.35em" text-anchor="middle" class="goodtext">lesson recalled</text>
+  <rect x="696" y="370" width="128" height="26" rx="13" class="good"/>
+  <text x="760" y="383" dy="0.35em" text-anchor="middle" class="goodtext">lesson recalled</text>
+  <line x1="560" y1="442" x2="560" y2="398" class="edge" marker-end="url(#arrow)"/>
+  <line x1="560" y1="370" x2="560" y2="350" class="edge" marker-end="url(#arrow)"/>
+  <line x1="760" y1="442" x2="760" y2="398" class="edge" marker-end="url(#arrow)"/>
+  <line x1="760" y1="370" x2="760" y2="350" class="edge" marker-end="url(#arrow)"/>
+
+  <rect x="290" y="442" width="540" height="42" rx="8" class="node"/>
+  <text x="560" y="463" dy="0.35em" text-anchor="middle" class="label">KNOWLEDGE GRAPH  /  lessons, decisions, solutions, architecture</text>
+  <text x="56" y="468" class="note">plain Markdown in git,</text>
+  <text x="56" y="485" class="note">reviewed like code</text>
+</svg>
