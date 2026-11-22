@@ -21,6 +21,12 @@ Drop it into a new or existing repository, run `/kit-init`, and Claude starts ev
 
 Narrated walkthrough with every diagram animated: the problem, setup, the loops, context resets and the knowledge graph.
 
+
+
+https://github.com/user-attachments/assets/90834dc6-7b6e-4c86-a415-e7bcba96feb1
+
+
+
 <p align="center"><img src="docs/images/why.svg" alt="Without the kit you correct the same mistake every session; with the kit the first correction becomes a lesson that later sessions recall" width="860"></p>
 
 ## Contents
