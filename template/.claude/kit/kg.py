@@ -35,7 +35,7 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-KIT_VERSION = "1.1.0"
+KIT_VERSION = "1.2.0"
 
 TYPE_DIRS = {
     "architecture": "architecture",
@@ -872,6 +872,23 @@ def doctor(root: Path) -> dict:
     report["initialized"] = bool(cfg.get("initialized"))
     report["hooks_registered"] = hooks_ok
     report["last_curate"] = cfg.get("last_curate")
+    protected = cfg.get("research", {}).get("protected_paths", [])
+    baseline = root / ".claude" / "kit" / "research-baseline.json"
+    if protected:
+        report["checks"].append(f"research guard: {len(protected)} protected paths, baseline {'present' if baseline.exists() else 'missing'}")
+        if not baseline.exists():
+            report["warnings"].append("research paths are protected but no baseline exists; run `python .claude/kit/runlog.py baseline`")
+    so = cfg.get("second_opinion", {})
+    if so.get("enabled"):
+        cmd = str(so.get("command") or "").split()
+        import shutil  # noqa: PLC0415
+
+        found = bool(cmd) and shutil.which(cmd[0]) is not None
+        report["checks"].append(f"second opinion: on, command {cmd[0] if cmd else '(none)'} {'found' if found else 'NOT found on PATH'}")
+        if not found:
+            report["warnings"].append("second_opinion is enabled but its command was not found on PATH")
+    report["research_protected_paths"] = len(protected)
+    report["second_opinion"] = bool(so.get("enabled"))
     return report
 
 

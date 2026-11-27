@@ -4,6 +4,17 @@ All notable changes to this project. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-27
+
+### Added
+
+- Research-integrity guard: `research.protected_paths` in config, a pre-tool check that asks before protected evaluation data, test sets, metric code or baselines are edited, moved, overwritten or deleted, and `runlog.py` to fingerprint them and log every experiment run with seed, commit, data fingerprints and metrics.
+- `/experiment` skill to set up the guard, run and report experiments, and trace every reported number to a logged run.
+- Optional second opinion from a different model: `review.py` and the `/second-opinion` skill send a secret-scanned review packet to a command you configure and record its verdict. Off by default.
+- The verifier checks research integrity and, when enabled, includes the second opinion; either REJECT rejects.
+- Constitution invariants C12 (evaluation is fixed) and C13 (second opinion is opt-in).
+- `kg.py doctor` reports the research guard and second-opinion status.
+
 ## [1.1.0] - 2026-11-22
 
 ### Added

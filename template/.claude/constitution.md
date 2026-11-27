@@ -27,3 +27,9 @@ Each invariant has an id so proposals can cite it.
 
 - **C10 bounded-loops**: Every autonomous loop has a stop rule, an attempt budget and an escalation path. Three identical failures end the loop and go to the user.
 - **C11 small-always-on-context**: `CLAUDE.md` stays under 150 lines. Subsystem guidance goes to path-scoped rules, procedures go to skills, facts go to the knowledge graph.
+
+## Research and review
+
+- **C12 evaluation-is-fixed**: Paths in `research.protected_paths` (evaluation data, test sets, metric code, baselines) change only with the user's approval, recorded as a decision. Reported results come from logged runs, failed and worse runs included, compared on the same seeds, data and evaluation code.
+  Rationale: a result is only as trustworthy as the evaluation behind it, whoever ran the experiment.
+- **C13 second-opinion-is-opt-in**: Code leaves this machine for another model's review only when the user enabled `second_opinion` and chose its command. The packet is secret-scanned first, and a hit stops it. A second opinion is evidence, not authority: disagreements go to the user.

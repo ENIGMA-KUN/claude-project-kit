@@ -11,6 +11,8 @@ Include what you found, how to reproduce it, and the kit version (`kit_version` 
 - Hook behaviour that could run commands, leak data or block a session unexpectedly (`template/.claude/hooks/kit_hook.py`).
 - Ways to get text from untrusted sources (web pages, issues, other tools' output) promoted into always-on instructions without human approval.
 - Secrets reaching the knowledge graph, the task ledger, the resume brief or the signal log despite the scanners.
+- Secrets or excluded files reaching a second-opinion review packet, or the packet being sent when `second_opinion` is off.
+- Ways to change protected research paths without the guard asking.
 - The installer overwriting or deleting user files.
 
 ## What the kit does not claim

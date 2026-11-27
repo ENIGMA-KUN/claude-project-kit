@@ -1,5 +1,5 @@
 {
-  "kit_version": "1.1.0",
+  "kit_version": "1.2.0",
   "kit_home": "",
   "python": "python",
   "initialized": false,
@@ -35,6 +35,17 @@
     "brief_max_chars": 8000,
     "compact_inject_chars": 3000,
     "stale_days": 7
+  },
+  "research": {
+    "protected_paths": [],
+    "note": "Globs for evaluation data, test sets, metric code and baseline configs. Edits ask the user first; runlog.py fingerprints them."
+  },
+  "second_opinion": {
+    "enabled": false,
+    "command": "",
+    "timeout_s": 900,
+    "max_diff_chars": 60000,
+    "note": "Command that reads a review packet on stdin (or {prompt_file}) and prints 'VERDICT: ACCEPT|REJECT|ESCALATE'. Sends the diff to that tool's provider."
   },
   "reflect_nudge_threshold": 3,
   "curate_every_days": 7,

@@ -10,7 +10,7 @@ The kit makes Claude Code change its own setup over time. That only stays safe i
 2. Claims need evidence. Acceptance in skills and agents is based on commands, exit codes and diffs, not on a model saying it is done.
 3. No runtime dependencies. `kg.py`, `ledger.py`, `kit_hook.py` and `install.py` use the Python standard library only and must run on Python 3.8.
 4. Hooks fail open and stay fast. A bug in a hook must never block a session; it logs to `.claude/kit/state/hook-errors.log`. `UserPromptSubmit` and `PreToolUse` handlers should finish well under a second.
-5. Nothing leaves the machine. No network calls from hooks or tools; signals and ledgers stay local and are redacted for secrets.
+5. Nothing leaves the machine by default. Hooks make no network calls; signals, ledgers and run logs stay local and are redacted for secrets. The only exception is the second opinion, which the user turns on and points at a command, and whose packet is secret-scanned first.
 6. Small always-on footprint. New behaviour belongs in a skill, a path-scoped rule or the knowledge graph before it belongs in `CLAUDE.md`.
 7. Never overwrite user files. The installer upgrades kit-managed files with a backup and parks everything else in `.claude/kit/incoming/`.
 

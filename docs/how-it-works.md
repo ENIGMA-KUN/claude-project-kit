@@ -8,7 +8,7 @@ All hooks call one dispatcher, `.claude/hooks/kit_hook.py <event>`. Each handler
 |-------------------|---------|--------|
 | `SessionStart` (startup, resume, clear, compact) | `session-start` | Adds a short `[project-kit]` note: whether `/kit-init` is still needed, graph counts, stale nodes, pending proposals, the three newest lessons, the latest handoff, git branch and changed-file count, and whether `/curate` is due. After compaction it puts the open part of the task ledger back into context; after `/clear`, or on a new session within `stale_days`, it adds a one-line pointer to the ledger and brief. Also deletes per-session state older than seven days. |
 | `UserPromptSubmit` | `prompt` | Detects corrections ("no, that's wrong", "I told you", "you keep...") and logs them. Files decision phrases ("let's go with...", "use X instead of Y", "stick with...") as approved decisions and sets the ledger goal from the first substantial prompt. Runs BM25 over active nodes and injects up to three matches as one-line pointers. A node is injected at most once per session. Slash commands are skipped; `/learn` and `/reflect` mark the session as reflected. |
-| `PreToolUse` (Bash, PowerShell, Edit, Write, MultiEdit) | `pre-tool` | Denies or asks on destructive commands; asks before edits to the constitution; denies secrets written into knowledge or instruction files. |
+| `PreToolUse` (Bash, PowerShell, Edit, Write, MultiEdit, NotebookEdit) | `pre-tool` | Denies or asks on destructive commands; asks before edits to the constitution or to protected research paths (including shell commands that delete, move, overwrite or edit them in place); denies secrets written into knowledge or instruction files. |
 | `PostToolUse` (AskUserQuestion) | `post-tool` | Files each answer as an approved decision: `<header>: <chosen option>`. |
 | `PostToolUseFailure` | `tool-failure` | Logs the failure with a normalised pattern key (paths, numbers and quoted strings removed). On the third identical failure in a session (and the sixth) it tells Claude the loop budget is spent. |
 | `PreCompact` | `pre-compact` | Logs a context-pressure signal and rebuilds the resume brief from the transcript before the conversation is compacted. |
@@ -33,6 +33,43 @@ Decision statuses: `proposed`, `approved`, `rejected`, `superseded` (with `super
 The brief (`.claude/kit/briefs/<branch>.md`) is rebuilt from the transcript on PreCompact, SessionEnd and, at most every two minutes, on Stop. It holds, in order: a line telling Claude to check the disk before trusting it, the ledger goal, the original request, the latest request, the open part of the ledger, files touched (up to 30) and as many recent turns as fit. The head may use half of the budget (8,000 characters by default, `ledger.brief_max_chars`); the file list shrinks first, then older turns are dropped with a marker. Tool output and Claude's reasoning are never included; each tool call is one line with its target.
 
 Settings under `ledger` in `config.json`: `enabled`, `capture_user_decisions`, `brief_max_chars`, `compact_inject_chars` (default 3,000) and `stale_days` (default 7) for the new-session pointer.
+
+## Research guard
+
+Configured under `research.protected_paths` in `config.json`, usually by `/experiment setup`. The globs name the evaluation surface: held-out data, test sets, metric code, baseline configs, fixed prompts for LLM evaluation.
+
+| Piece | What it does |
+|-------|--------------|
+| `pre-tool` hook | Asks the user before any Edit, Write or notebook edit to a protected path, and before shell commands that delete, move, overwrite (`>`, `tee`, `cp` onto it) or edit one in place (`sed -i`). Reading is not affected |
+| `runlog.py baseline` | Fingerprints every protected file (SHA-256; files over 64 MB by size and timestamp) into `.claude/kit/research-baseline.json` |
+| `runlog.py check` | Lists files changed, added or removed since the baseline; exits 1 if any |
+| `runlog.py run --name N -- CMD` | Runs the experiment and appends to `.claude/kit/runs.jsonl`: command, commit (and whether the tree was dirty), seed, exit code, duration, protected fingerprints, changes during the run, metrics parsed from `name: value` lines, JSON lines or `--metrics-file`, and a redacted output tail |
+| `runlog.py report` | Markdown table of every run of an experiment, failed ones included |
+| `runlog.py find --metric M --value V` | Finds the run behind a reported number; exits 1 when none exists |
+| `runlog.py compare A B` | Shows differences in seed, commit, command, protected fingerprints and metrics |
+
+The verifier uses `check`, `find`, `compare` and `report` before accepting research work. Commit `research-baseline.json` and `runs.jsonl` if collaborators should be able to check results; they are not gitignored.
+
+## Second opinion review
+
+`review.py` sends a review packet to a different model through a command you configure:
+
+```json
+"second_opinion": {"enabled": true, "command": "codex exec -", "timeout_s": 900, "max_diff_chars": 60000}
+```
+
+| Tool | Example command | Input |
+|------|-----------------|-------|
+| Codex CLI | `codex exec -` | stdin |
+| Gemini CLI | `gemini -p "Review the change described in the input and answer in the format it asks for."` | stdin appended to the prompt |
+| Claude, another model | `claude -p --model opus` | stdin |
+| Anything that wants a file | `mytool --input {prompt_file}` | the packet file |
+
+Check each tool's `--help`; flags change between versions.
+
+The packet contains review instructions, the requirement, the diff since `--base` (or the uncommitted changes, or the last commit), new untracked files, the task ledger's open items and, when research paths are protected, the output of `runlog.py check` and the recent runs. Files that usually hold secrets (`.env*`, keys, certificates, `secrets/`, `credentials*`) are left out, and the whole change is scanned with the kit's secret patterns before anything is sent; a hit stops the review with exit code 4. Packets and answers are saved in `.claude/kit/reviews/` (gitignored).
+
+The reviewer must answer `VERDICT: ACCEPT`, `REJECT` or `ESCALATE` with reasons. Exit codes: 0 accept, 1 reject, 2 escalate or no verdict, 3 not enabled, 4 refused, 5 the command failed or timed out. When enabled, the verifier runs it and treats either REJECT as REJECT and any other disagreement as ESCALATE.
 
 ## Retrieval
 
@@ -62,6 +99,7 @@ Only `status: active` nodes are served. Candidates and proposals never reach a s
 | `compact` | performance | `trigger` |
 | `injected` | | `nodes` |
 | `decision` | | `source` (`markers` or `ask`), `ids` |
+| `second_opinion` | | `verdict` (ACCEPT, REJECT, ESCALATE, NONE, refused, timeout) |
 | `session_start`, `session_end` | | counts |
 
 All text is passed through the secret patterns before it is written. `kg.py signals` aggregates the window: events by kind, top failure patterns with session counts, recent corrections, and per-lesson injection counts against recurrences of the lesson's `trigger` words since the lesson was created.

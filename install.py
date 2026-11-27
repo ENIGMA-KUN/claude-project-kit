@@ -26,6 +26,8 @@ TEMPLATE = KIT_HOME / "template"
 MANAGED = [
     ".claude/kit/kg.py",
     ".claude/kit/ledger.py",
+    ".claude/kit/runlog.py",
+    ".claude/kit/review.py",
     ".claude/hooks/kit_hook.py",
     ".claude/rules/knowledge-authoring.md",
     ".claude/agents/verifier.md",
@@ -44,6 +46,7 @@ GITIGNORE_LINES = [
     ".claude/kit/handoffs/",
     ".claude/kit/ledger/",
     ".claude/kit/briefs/",
+    ".claude/kit/reviews/",
     ".claude/kit/backup/",
     ".claude/kit/incoming/",
     ".claude/settings.local.json",

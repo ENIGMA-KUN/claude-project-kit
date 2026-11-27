@@ -208,6 +208,16 @@ def on_session_start(data: dict) -> None:
     if recent >= 10 and (last is None or (dt.date.today() - last).days >= every):
         lines.append(f"Meta loop due: {recent} friction/usage events since the last /curate. Mention it to the user once.")
 
+    research = protected_globs()
+    if research:
+        baseline = KIT / "research-baseline.json"
+        when = time.strftime("%Y-%m-%d", time.localtime(baseline.stat().st_mtime)) if baseline.exists() else "none yet"
+        lines.append(
+            f"Research guard on: {len(research)} protected evaluation paths (baseline: {when}). Run experiments through "
+            "`python .claude/kit/runlog.py run --name <name> -- <command>`, report only numbers a logged run produced "
+            "(failed runs included), and run `runlog.py check` before reporting results."
+        )
+
     lines += ledger_context(source, cfg)
 
     if lines:
@@ -351,6 +361,70 @@ ASK_PATTERNS = [
 ]
 PROTECTED_KNOWLEDGE = re.compile(r"(^|[/\\])(knowledge|\.claude[/\\](rules|skills|agents))[/\\]|(^|[/\\])CLAUDE(\.local)?\.md$")
 
+# Shell verbs that change or remove a file named on the same command line.
+WRITE_VERBS = re.compile(
+    r"(^|[;&|(]|\s)(rm|del|erase|mv|move|cp|copy|truncate|tee|dd|shred|unlink|rmdir|"
+    r"git\s+(rm|mv|restore|checkout\s+--)|sed\s+-[a-zA-Z]*i|perl\s+-[a-zA-Z]*i|"
+    r"remove-item|move-item|copy-item|rename-item|set-content|add-content|clear-content|out-file)\b",
+    re.I,
+)
+REDIRECT_TARGET = re.compile(r">{1,2}\s*['\"]?([^\s'\";&|]+)")
+PROTECTED_REASON = (
+    "{path} is a protected research path (evaluation data, metric code or a baseline listed in "
+    "research.protected_paths). Changing it changes what results mean, so the user must approve it; "
+    "record the approval with /decide."
+)
+
+
+def protected_globs() -> list:
+    out = []
+    for g in config().get("research", {}).get("protected_paths", []):
+        g = str(g).strip().replace("\\", "/")
+        while g.startswith("./"):
+            g = g[2:]
+        if g:
+            out.append(g)
+    return out
+
+
+def project_relative(path: str) -> str:
+    p = path.strip().strip("'\"").replace("\\", "/")
+    root = str(ROOT).replace("\\", "/").rstrip("/")
+    if p.lower().startswith(root.lower() + "/"):
+        p = p[len(root) + 1:]
+    while p.startswith("./"):
+        p = p[2:]
+    return p
+
+
+def is_protected(path: str, globs: list) -> bool:
+    import fnmatch  # noqa: PLC0415
+
+    rel = project_relative(path)
+    if not rel or not globs:
+        return False
+    for g in globs:
+        g = g.rstrip("/")
+        if any(ch in g for ch in "*?["):
+            if fnmatch.fnmatch(rel, g) or fnmatch.fnmatch(rel, g.replace("/**", "")):
+                return True
+        elif rel == g or rel.startswith(g + "/"):
+            return True
+    return False
+
+
+def protected_in_command(cmd: str, globs: list) -> str:
+    """Return the protected path a shell command would change, or ''."""
+    for target in REDIRECT_TARGET.findall(cmd):
+        if is_protected(target, globs):
+            return target
+    if WRITE_VERBS.search(cmd):
+        for token in re.findall(r"['\"]([^'\"]+)['\"]|(\S+)", cmd):
+            word = token[0] or token[1]
+            if ("/" in word or "\\" in word or "." in word) and is_protected(word, globs):
+                return word
+    return ""
+
 
 def on_pre_tool(data: dict) -> None:
     tool = data.get("tool_name", "")
@@ -359,6 +433,12 @@ def on_pre_tool(data: dict) -> None:
     def decide(decision: str, reason: str) -> None:
         log_event({"event": "guard", "category": "alignment", "session": short_session(data), "tool": tool, "text": reason})
         emit({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": decision, "permissionDecisionReason": f"[project-kit] {reason}"}})
+
+    globs = protected_globs()
+    if tool in ("Edit", "Write", "MultiEdit", "NotebookEdit") and globs:
+        target = str(tin.get("file_path") or tin.get("notebook_path") or "")
+        if is_protected(target, globs):
+            return decide("ask", PROTECTED_REASON.format(path=project_relative(target)))
 
     if tool in ("Bash", "PowerShell"):
         cmd = str(tin.get("command") or "")
@@ -370,6 +450,9 @@ def on_pre_tool(data: dict) -> None:
                 return decide("deny", f"Blocked destructive command pattern '{s}'.")
         if re.search(r"git\s+push\b.*(\s-f\b|--force)[^;&|]*\b(main|master)\b", cmd):
             return decide("deny", "Force push to main/master is not allowed by the project constitution.")
+        hit = protected_in_command(cmd, globs) if globs else ""
+        if hit:
+            return decide("ask", PROTECTED_REASON.format(path=project_relative(hit)))
         for pat, why in ASK_PATTERNS:
             if pat.search(cmd):
                 return decide("ask", f"Needs the user's confirmation: {why}.")

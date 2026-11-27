@@ -98,6 +98,6 @@ Rules: only one writer per state field; one node owns the budget counter; no edg
 
 ## 5. Accept
 
-When verification passes, start the `verifier` agent with: the requirement and acceptance criteria, the base revision, and the verification commands. It reviews the diff with fresh context and returns ACCEPT, REJECT or ESCALATE with evidence. A REJECT counts as a failed attempt against the budget.
+When verification passes, start the `verifier` agent with: the requirement and acceptance criteria, the base revision, and the verification commands. It reviews the diff with fresh context and returns ACCEPT, REJECT or ESCALATE with evidence. A REJECT counts as a failed attempt against the budget. When the user has enabled `second_opinion`, the verifier also gets a review from a different model; for research tasks it checks the protected evaluation paths and traces every reported number to a logged run (`/experiment`).
 
-Report to the user: terminal state (done, failed, escalated), the evidence table (criterion, command, exit status), the verifier verdict, and anything learned. Offer `/learn` for any lesson that would have saved an attempt.
+Report to the user: terminal state (done, failed, escalated), the evidence table (criterion, command, exit status), the verifier verdict, the second opinion if one ran, and anything learned. Offer `/learn` for any lesson that would have saved an attempt.

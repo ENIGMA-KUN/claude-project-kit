@@ -2,7 +2,7 @@
 
 [![test](https://github.com/ENIGMA-KUN/claude-project-kit/actions/workflows/test.yml/badge.svg)](https://github.com/ENIGMA-KUN/claude-project-kit/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-a8473a.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.1.0-a8473a.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-a8473a.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-a8473a.svg)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-a8473a.svg)
 
@@ -113,6 +113,8 @@ The installer never overwrites your files. If you already have a `CLAUDE.md` or 
 | `/loop-contract` | Goal, budget, stop rule and verification written down before long or risky work |
 | Task ledger | Per-branch working memory on disk: goal, decisions with status, dead ends, next step. Comes back after compaction and `/clear` |
 | `/decide` | Save, change, review and approve decisions; promote lasting ones to the knowledge graph |
+| `/experiment` | Research-integrity guard: protected evaluation data and metric code, a run log with seeds and data fingerprints, results that trace to logged runs |
+| `/second-opinion` | Optional review of a change by a different model (Codex CLI, Gemini CLI, another Claude model); off by default |
 | `/handoff` | Save state before stopping; resume tomorrow with the claims re-checked |
 | `/audit` | Quarterly clean-up of instruction debt and context budget |
 | `recall` | Lets Claude search the graph on its own when a task touches known ground |
@@ -129,7 +131,8 @@ The installer never overwrites your files. If you already have a `CLAUDE.md` or 
 | You start a project from an empty folder | `/kit-init --new` | Your stack choices recorded as decisions with reasons, and a tiny `CLAUDE.md` that grows from real corrections instead of guesses |
 | Claude keeps making the same mistake (pip instead of uv, wrong test folder, editing generated files) | `/learn` once | A lesson with trigger words; the hook brings it back whenever the trigger shows up. If it still recurs, `/curate` proposes a hook or test instead |
 | A bug you fixed months ago comes back | `recall` (automatic) | The old `solutions/` node, with the root cause and the edge cases, shows up when the same error text appears |
-| ML or research repo with notebooks and experiments | `/kit-init`, then `/learn` | Concepts for metrics and dataset splits, decisions on evaluation protocol, lessons on things like GPU memory or data leakage |
+| ML or research repo with notebooks and experiments | `/kit-init`, then `/experiment setup` | Evaluation data and metric code that cannot change without your approval, every run logged with seed and data fingerprints, and reported numbers that must trace to a logged run, failed runs included |
+| A high-stakes change where you want a check that does not share one model's blind spots | `/second-opinion` | A different model reviews the diff, the ledger and the run log and returns ACCEPT, REJECT or ESCALATE; disagreements come to you |
 | A long refactor or migration you want to run with little supervision | `/loop-contract migrate X to Y` | A written contract with allowed files, verification commands and an attempt budget, then an independent verifier verdict with evidence |
 | You stop mid-task and come back next week | `/handoff`, later `/handoff resume` | A resume that re-checks what was actually done instead of trusting the old summary |
 | Auto-compaction hits in the middle of a long task | nothing | The goal, approved decisions, dead ends and next step are put back into context right after compaction, so Claude does not reopen settled questions or retry what failed |
@@ -238,6 +241,8 @@ Full schema: [template/knowledge/_schema.md](template/knowledge/_schema.md).
 - Destructive commands: recursive deletes of root or home folders, force pushes to main or master and disk-level commands are denied; `git reset --hard`, `git clean`, destructive SQL, publishing and anything touching credential files ask first.
 - Secrets: writes into `knowledge/`, `CLAUDE.md`, `.claude/rules`, `.claude/skills` and `.claude/agents` are scanned and denied on a match. The scan reports the kind of secret, never the value.
 - Privacy: the friction log, task ledgers and resume briefs stay on your machine (`.claude/kit/signals/`, `ledger/`, `briefs/`, all gitignored), signals are redacted before writing, and the hooks make no network calls.
+- Research integrity: paths listed as protected evaluation data or metric code cannot be edited, moved or overwritten without your confirmation, and `runlog.py check` reports any change since the baseline fingerprint.
+- Second opinion: off by default. When you turn it on, a review packet (requirement, diff, ledger, run log) goes to the command you chose. Files such as `.env` and keys are left out, and the whole change is scanned for secrets first; any hit stops the review. `--dry-run` shows exactly what would be sent.
 - Untrusted input: facts from web pages, issues or other tools enter the graph only as candidates, which are never served to sessions until approved.
 - Approval: the constitution says nothing reaches `CLAUDE.md`, rules, skills, hooks or settings without your yes, and a hook asks before anything edits the constitution.
 - Failure mode: hooks fail open. A kit bug logs to `.claude/kit/state/hook-errors.log` and never blocks your session.
@@ -259,12 +264,21 @@ What this kit puts first, and where to look if you want to check the claim:
 - A written constitution and a human approval step for anything that reaches always-on context ([constitution](template/.claude/constitution.md), [/curate](template/.claude/skills/curate/SKILL.md)).
 - Measured lessons: how often each lesson was recalled, and whether the failure it targets came back afterwards ([signals](docs/how-it-works.md#signals)).
 - A task ledger with decision statuses and sign-off that survives compaction and `/clear` ([ledger](docs/how-it-works.md#task-ledger-and-resume-brief)).
-- Bounded loops with an independent verifier that checks approved decisions and dead ends ([loop contract](template/.claude/skills/loop-contract/SKILL.md), [verifier](template/.claude/agents/verifier.md)).
+- Bounded loops with an independent verifier that checks approved decisions and dead ends ([loop contract](template/.claude/skills/loop-contract/SKILL.md), [verifier](template/.claude/agents/verifier.md)), and an optional second opinion from a different model ([second opinion](template/.claude/skills/second-opinion/SKILL.md)).
+- Research integrity checks that work the same whoever runs the experiment: fixed evaluation, logged runs, traceable numbers ([experiment](template/.claude/skills/experiment/SKILL.md)).
 - No dependencies and no network calls; an end-to-end test suite that runs on Windows with Python 3.8 to 3.12.
 
 What it does not have yet: a large user base, support for agents other than Claude Code, semantic (embedding) search, and a library of ready-made domain skills. If you need those today, the projects above are further along, and most of them can run alongside this kit.
 
 ## FAQ
+
+### Does anything leave my machine?
+
+Not unless you turn on the second opinion. The hooks, the graph, the ledger and the run log are local. With `second_opinion` enabled, a review packet goes to the tool you configured (and from there to its provider); run `python .claude/kit/review.py --dry-run` to see it first.
+
+### Why the research guard?
+
+Research usually goes wrong quietly: an evaluation file edited during a fix, a seed changed between runs, a summary built from the best run, a number no run produced. Those mistakes happen with people and with any model. The guard makes each one checkable instead of a matter of trust: protected paths ask before they change, `runlog.py` fingerprints the evaluation and logs every run, and the verifier rejects numbers it cannot trace.
 
 ### Does it cost many tokens?
 
@@ -316,9 +330,10 @@ template/                 what gets copied into a project
   .claude/settings.json   hook registration and deny rules
   .claude/constitution.md
   .claude/hooks/kit_hook.py
-  .claude/kit/            kg.py (graph), ledger.py (task ledger and brief), config.json, contracts/
+  .claude/kit/            kg.py (graph), ledger.py (ledger, brief), runlog.py (experiments), review.py (second opinion)
   .claude/rules/          knowledge-authoring.md (loads only for knowledge/)
-  .claude/skills/         kit-init, learn, reflect, curate, recall, decide, handoff, loop-contract, audit
+  .claude/skills/         kit-init, learn, reflect, curate, recall, decide, experiment, second-opinion,
+                          handoff, loop-contract, audit
   .claude/agents/         verifier, curator
 ```
 

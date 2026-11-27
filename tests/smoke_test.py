@@ -230,6 +230,72 @@ def main() -> int:
         out = hook(project, "session-start", {"session_id": "smoke-5", "source": "clear"})
         check("archived ledger is no longer offered", "Task ledger" not in json.dumps(out), json.dumps(out)[-300:])
 
+        # ------------------------------------------------------ research guard
+        (project / "data" / "eval").mkdir(parents=True)
+        (project / "data" / "eval" / "test.csv").write_text("id,label\n1,cat\n2,dog\n", encoding="utf-8")
+        (project / "src" / "demo" / "metrics.py").write_text("def accuracy(p, y):\n    return sum(a == b for a, b in zip(p, y)) / len(y)\n", encoding="utf-8")
+        cfg_path = project / ".claude/kit/config.json"
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+        cfg["research"]["protected_paths"] = ["data/eval/**", "src/demo/metrics.py"]
+        cfg_path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+
+        check("guard asks before editing protected eval data",
+              decision({"tool_name": "Edit", "tool_input": {"file_path": str(project / "data/eval/test.csv"), "old_string": "cat", "new_string": "dog"}}) == "ask")
+        check("guard asks before editing protected metric code",
+              decision({"tool_name": "Write", "tool_input": {"file_path": "src/demo/metrics.py", "content": "x"}}) == "ask")
+        check("guard allows editing unprotected code",
+              decision({"tool_name": "Edit", "tool_input": {"file_path": str(project / "src/demo/db.py"), "old_string": "a", "new_string": "b"}}) == "")
+        check("guard asks before rm of protected data", decision({"tool_name": "Bash", "tool_input": {"command": "rm data/eval/test.csv"}}) == "ask")
+        check("guard asks before redirect into protected data", decision({"tool_name": "Bash", "tool_input": {"command": "python gen.py > data/eval/test.csv"}}) == "ask")
+        check("guard allows reading protected data", decision({"tool_name": "Bash", "tool_input": {"command": "head -5 data/eval/test.csv"}}) == "")
+        check("hard denies still win over the research ask", decision({"tool_name": "Bash", "tool_input": {"command": "rm -rf /"}}) == "deny")
+        out = hook(project, "session-start", {"session_id": "smoke-6", "source": "startup"})
+        check("session-start announces the research guard", "Research guard on" in json.dumps(out), json.dumps(out)[-300:])
+
+        rl = [sys.executable, str(project / ".claude/kit/runlog.py")]
+        res = run(rl + ["baseline"], project)
+        check("runlog baseline fingerprints protected paths", res.returncode == 0 and "2 files" not in res.stdout and "digest" in res.stdout, res.stdout)
+        res = run(rl + ["check"], project)
+        check("runlog check is clean right after baseline", res.returncode == 0, res.stdout)
+        res = run(rl + ["run", "--name", "baseline", "--", sys.executable, "-c", "print('epoch 3 done'); print('accuracy: 0.913'); print('f1=0.88')", "--seed", "7"], project)
+        runs = [json.loads(x) for x in (project / ".claude/kit/runs.jsonl").read_text(encoding="utf-8").splitlines()]
+        check("runlog run records metrics, seed and exit code",
+              res.returncode == 0 and runs[-1]["metrics"].get("accuracy") == 0.913 and runs[-1]["metrics"].get("f1") == 0.88 and runs[-1]["seed"] == "7" and runs[-1]["exit"] == 0,
+              json.dumps(runs[-1])[:300])
+        run(rl + ["run", "--name", "baseline", "--", sys.executable, "-c", "import sys; print('accuracy: 0.41'); sys.exit(3)"], project)
+        res = run(rl + ["report", "--name", "baseline"], project)
+        check("runlog report keeps the failed run", "| 3 |" in res.stdout and "0.913" in res.stdout and "0.41" in res.stdout, res.stdout[-400:])
+        check("runlog find traces a reported number", run(rl + ["find", "--metric", "accuracy", "--value", "0.913"], project).returncode == 0)
+        check("runlog find rejects an invented number", run(rl + ["find", "--metric", "accuracy", "--value", "0.95"], project).returncode == 1)
+        (project / "data" / "eval" / "test.csv").write_text("id,label\n1,cat\n2,cat\n", encoding="utf-8")
+        res = run(rl + ["check"], project)
+        check("runlog check catches a changed eval file", res.returncode == 1 and "data/eval/test.csv" in res.stdout, res.stdout)
+        res = run(rl + ["compare", "r0001", "r0002"], project)
+        check("runlog compare shows differing seeds", "seed" in res.stdout and "differs" in res.stdout, res.stdout[:300])
+
+        # ------------------------------------------------------ second opinion
+        review = [sys.executable, str(project / ".claude/kit/review.py")]
+        res = run(review + ["--requirement", "keep metrics stable"], project)
+        check("second opinion is off by default", res.returncode == 3, res.stdout)
+        fake = tmp / "fake_reviewer.py"
+        fake.write_text("import sys\ndata = sys.stdin.read()\nprint('VERDICT: REJECT' if 'data/eval/test.csv' in data else 'VERDICT: ACCEPT')\n"
+                        "print('- eval file changed' if 'data/eval/test.csv' in data else '- looks fine')\n", encoding="utf-8")
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+        cfg["second_opinion"].update({"enabled": True, "command": f'"{sys.executable}" "{fake}"'})
+        cfg_path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+        res = run(review + ["--requirement", "keep metrics stable", "--dry-run"], project)
+        check("second opinion dry run sends nothing and saves the packet", res.returncode == 0 and "dry run" in res.stdout, res.stdout)
+        packets = sorted((project / ".claude/kit/reviews").glob("*-packet.md"))
+        packet = packets[-1].read_text(encoding="utf-8") if packets else ""
+        check("review packet carries requirement, diff and research evidence",
+              "keep metrics stable" in packet and "data/eval/test.csv" in packet and "runlog.py check" in packet, packet[:300])
+        res = run(review + ["--requirement", "keep metrics stable"], project)
+        check("second opinion returns the reviewer's REJECT", res.returncode == 1 and "REJECT" in res.stdout, res.stdout[:300])
+        (project / "src" / "demo" / "keys.py").write_text("API_KEY = 'sk-" + "Zx9" * 10 + "'\n", encoding="utf-8")
+        res = run(review + ["--requirement", "keep metrics stable"], project)
+        check("second opinion refuses to send a packet with a secret", res.returncode == 4 and "Nothing was sent" in res.stdout, res.stdout[:300])
+        (project / "src" / "demo" / "keys.py").unlink()
+
         res = run(kg + ["doctor", "--json"], project)
         doc = json.loads(res.stdout)
         check("doctor sees registered hooks", doc.get("hooks_registered") is True, res.stdout)

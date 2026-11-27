@@ -122,8 +122,10 @@ Fix every validation error before moving on.
    Pass: <observable behaviour, for example "uses uv run, not pip">
    ```
 
-3. Run `python .claude/kit/kg.py doctor` and include its maturity level in your report.
-4. If something in the kit template did not fit this kind of project (a missing node type, a hook that misfired, a skill step that made no sense here), append a short dated note to `<kit_home>/FEEDBACK.md` when `kit_home` is set in config, otherwise to `.claude/kit/kit-feedback.md`. This is how the kit itself improves across projects.
+3. If the project trains, evaluates or benchmarks models, or reports experimental results (kind `research` or `data-pipeline`, notebooks, `eval/` or `metrics` code), offer the research guard and, if the user agrees, follow the `setup` section of `.claude/skills/experiment/SKILL.md`: protected evaluation paths, a baseline fingerprint, the evaluation protocol as decisions.
+4. Mention, in one line, that a second opinion from a different model is available but off (`second_opinion` in config, `/second-opinion`). Do not enable it; it sends code to another provider.
+5. Run `python .claude/kit/kg.py doctor` and include its maturity level in your report.
+6. If something in the kit template did not fit this kind of project (a missing node type, a hook that misfired, a skill step that made no sense here), append a short dated note to `<kit_home>/FEEDBACK.md` when `kit_home` is set in config, otherwise to `.claude/kit/kit-feedback.md`. This is how the kit itself improves across projects.
 
 Report to the user in under 20 lines: mode, what you wrote (files and node counts), commands you verified and any that failed, the questions that stayed open, the maturity level, and the two habits that matter most from now on (`/learn` after a correction, `/curate` about weekly).
 
