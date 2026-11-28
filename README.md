@@ -2,7 +2,7 @@
 
 [![test](https://github.com/ENIGMA-KUN/claude-project-kit/actions/workflows/test.yml/badge.svg)](https://github.com/ENIGMA-KUN/claude-project-kit/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-a8473a.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.2.0-a8473a.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-a8473a.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-a8473a.svg)
 ![Dependencies](https://img.shields.io/badge/dependencies-none-a8473a.svg)
 
@@ -36,6 +36,7 @@ Download: [MP4, 720p, 6 MB](docs/media/claude-project-kit-explainer.mp4)
 - [A week with the kit](#a-week-with-the-kit)
 - [How it works](#how-it-works)
 - [Context resets and decisions](#context-resets-and-decisions)
+- [Staying current](#staying-current)
 - [The knowledge graph](#the-knowledge-graph)
 - [Safety model](#safety-model)
 - [How it compares](#how-it-compares)
@@ -115,6 +116,7 @@ The installer never overwrites your files. If you already have a `CLAUDE.md` or 
 | `/decide` | Save, change, review and approve decisions; promote lasting ones to the knowledge graph |
 | `/experiment` | Research-integrity guard: protected evaluation data and metric code, a run log with seeds and data fingerprints, results that trace to logged runs |
 | `/second-opinion` | Optional review of a change by a different model (Codex CLI, Gemini CLI, another Claude model); off by default |
+| `/upkeep` | Kit updates, and a watchlist of the outside tools the project uses: new releases, archived or relicensed projects, and checked alternatives |
 | `/handoff` | Save state before stopping; resume tomorrow with the claims re-checked |
 | `/audit` | Quarterly clean-up of instruction debt and context budget |
 | `recall` | Lets Claude search the graph on its own when a task touches known ground |
@@ -133,6 +135,8 @@ The installer never overwrites your files. If you already have a `CLAUDE.md` or 
 | A bug you fixed months ago comes back | `recall` (automatic) | The old `solutions/` node, with the root cause and the edge cases, shows up when the same error text appears |
 | ML or research repo with notebooks and experiments | `/kit-init`, then `/experiment setup` | Evaluation data and metric code that cannot change without your approval, every run logged with seed and data fingerprints, and reported numbers that must trace to a logged run, failed runs included |
 | A high-stakes change where you want a check that does not share one model's blind spots | `/second-opinion` | A different model reviews the diff, the ledger and the run log and returns ACCEPT, REJECT or ESCALATE; disagreements come to you |
+| A crawler, parser or SDK the project depends on gets archived, relicensed or abandoned | `/upkeep` (the weekly check flags it) | The change with evidence, the listed alternatives checked for health, new candidates compared on maintenance and license, and the choice recorded as a decision |
+| A new kit version ships | nothing, then `/upkeep` | A one-time note at session start, the changelog since your version, and an update that backs up every kit file it replaces |
 | A long refactor or migration you want to run with little supervision | `/loop-contract migrate X to Y` | A written contract with allowed files, verification commands and an attempt budget, then an independent verifier verdict with evidence |
 | You stop mid-task and come back next week | `/handoff`, later `/handoff resume` | A resume that re-checks what was actually done instead of trusting the old summary |
 | Auto-compaction hits in the middle of a long task | nothing | The goal, approved decisions, dead ends and next step are put back into context right after compaction, so Claude does not reopen settled questions or retry what failed |
@@ -189,6 +193,26 @@ After auto-compaction, the open part of the ledger goes straight back into conte
 
 `/decide` is the manual side: record a decision on purpose, `review` to approve or reject Claude's proposals in one batch, `change D2 "..."` to replace a decision while keeping the old one as superseded, and `promote D2` to turn a task decision into a permanent knowledge node. The `verifier` agent rejects work that contradicts an approved decision or retries a recorded dead end.
 
+## Staying current
+
+Two things age without anyone noticing: the kit, and the outside tools a project leans on. `upkeep.py` checks both, at most once a week, in a background process that adds nothing to session start. Anything new is reported once at the next session start, and `/upkeep` handles it with you.
+
+| What | Checked against | Flagged when |
+|------|-----------------|--------------|
+| The kit | the latest release of [ENIGMA-KUN/claude-project-kit](https://github.com/ENIGMA-KUN/claude-project-kit), or your fork | a newer version exists |
+| Each tool in `.claude/kit/watchlist.json` | its GitHub repository, plus PyPI, npm or Hugging Face when given | archived, deprecated, renamed, license changed, no commits for 270 days, or a release newer than the version you pin |
+| The alternatives listed for a flagged tool | the same checks | so a dead project is never offered as the replacement |
+
+```bash
+python .claude/kit/upkeep.py check                  # kit version and watchlist report
+python .claude/kit/upkeep.py update                 # changelog since your version, then install with a backup
+python .claude/kit/upkeep.py watch add crawl4ai --github unclecode/crawl4ai --pypi crawl4ai --alt firecrawl/firecrawl
+python .claude/kit/upkeep.py watch preset research  # crawlers, PDF parsers, agent loops, model runtimes, a benchmark
+python .claude/kit/upkeep.py probe firecrawl/firecrawl apify/crawlee   # compare candidates
+```
+
+Kit updates install only when you run or approve them. Set `upkeep.mode` to `auto` to have minor and patch releases installed in the background; a new major version always waits for you. `off` stops the background check. When a watched tool is flagged, `/upkeep` searches for maintained replacements, compares them with `probe`, checks what the project actually uses, and leaves the switch to you. Details in [docs/how-it-works.md](docs/how-it-works.md#upkeep).
+
 ## The knowledge graph
 
 One concept per Markdown file. The path is the id, frontmatter carries the type, status, source and links:
@@ -240,8 +264,9 @@ Full schema: [template/knowledge/_schema.md](template/knowledge/_schema.md).
 
 - Destructive commands: recursive deletes of root or home folders, force pushes to main or master and disk-level commands are denied; `git reset --hard`, `git clean`, destructive SQL, publishing and anything touching credential files ask first.
 - Secrets: writes into `knowledge/`, `CLAUDE.md`, `.claude/rules`, `.claude/skills` and `.claude/agents` are scanned and denied on a match. The scan reports the kind of secret, never the value.
-- Privacy: the friction log, task ledgers and resume briefs stay on your machine (`.claude/kit/signals/`, `ledger/`, `briefs/`, all gitignored), signals are redacted before writing, and the hooks make no network calls.
+- Privacy: the friction log, task ledgers and resume briefs stay on your machine (`.claude/kit/signals/`, `ledger/`, `briefs/`, all gitignored), and signals are redacted before writing. The only network use is the weekly upkeep check: GET requests to GitHub and package registries carrying repository and package names, nothing from the project. `upkeep.mode: off` stops it.
 - Research integrity: paths listed as protected evaluation data or metric code cannot be edited, moved or overwritten without your confirmation, and `runlog.py check` reports any change since the baseline fingerprint.
+- Updates: the kit never installs a new version without your yes unless you chose `auto` mode, and never a new major version on its own. Every replaced kit file is backed up first.
 - Second opinion: off by default. When you turn it on, a review packet (requirement, diff, ledger, run log) goes to the command you chose. Files such as `.env` and keys are left out, and the whole change is scanned for secrets first; any hit stops the review. `--dry-run` shows exactly what would be sent.
 - Untrusted input: facts from web pages, issues or other tools enter the graph only as candidates, which are never served to sessions until approved.
 - Approval: the constitution says nothing reaches `CLAUDE.md`, rules, skills, hooks or settings without your yes, and a hook asks before anything edits the constitution.
@@ -266,7 +291,8 @@ What this kit puts first, and where to look if you want to check the claim:
 - A task ledger with decision statuses and sign-off that survives compaction and `/clear` ([ledger](docs/how-it-works.md#task-ledger-and-resume-brief)).
 - Bounded loops with an independent verifier that checks approved decisions and dead ends ([loop contract](template/.claude/skills/loop-contract/SKILL.md), [verifier](template/.claude/agents/verifier.md)), and an optional second opinion from a different model ([second opinion](template/.claude/skills/second-opinion/SKILL.md)).
 - Research integrity checks that work the same whoever runs the experiment: fixed evaluation, logged runs, traceable numbers ([experiment](template/.claude/skills/experiment/SKILL.md)).
-- No dependencies and no network calls; an end-to-end test suite that runs on Windows with Python 3.8 to 3.12.
+- Update checks for the kit and for the outside tools a project depends on, with alternatives that are themselves checked ([upkeep](docs/how-it-works.md#upkeep)).
+- No dependencies, and no network use beyond that weekly check; an end-to-end test suite that runs on Windows with Python 3.8 to 3.12.
 
 What it does not have yet: a large user base, support for agents other than Claude Code, semantic (embedding) search, and a library of ready-made domain skills. If you need those today, the projects above are further along, and most of them can run alongside this kit.
 
@@ -274,7 +300,7 @@ What it does not have yet: a large user base, support for agents other than Clau
 
 ### Does anything leave my machine?
 
-Not unless you turn on the second opinion. The hooks, the graph, the ledger and the run log are local. With `second_opinion` enabled, a review packet goes to the tool you configured (and from there to its provider); run `python .claude/kit/review.py --dry-run` to see it first.
+No project data, unless you turn on the second opinion. The hooks, the graph, the ledger and the run log are local. The weekly upkeep check asks GitHub, and PyPI, npm or Hugging Face for watched packages, about release versions and repository status; the requests name only the repositories and packages being checked. Set `"upkeep": {"mode": "off"}` to stop it. With `second_opinion` enabled, a review packet goes to the tool you configured (and from there to its provider); run `python .claude/kit/review.py --dry-run` to see it first.
 
 ### Why the research guard?
 
@@ -310,7 +336,7 @@ Tell Claude; it will offer to update it. Nodes are never deleted, only marked `s
 
 ### How do I upgrade or remove it?
 
-`git pull` in the kit folder, re-run the installer on the project, then `/kit-init --refresh`. To remove: delete `.claude/hooks/kit_hook.py`, `.claude/kit/`, the kit skills and agents, the `kit_hook.py` entries in `.claude/settings.json` and the `project-kit` block in `.gitignore`. `knowledge/` is plain Markdown; keep it if you like.
+Run `/upkeep`, or `python .claude/kit/upkeep.py update`, in the project: it downloads the latest release, shows what changed and installs it with a backup. With a clone of the kit you can also `git pull` and re-run the installer; with the plugin, `/plugin marketplace update` then `/project-kit:adopt`. Afterwards run `/kit-init --refresh` if files were saved to `.claude/kit/incoming/`. To remove: delete `.claude/hooks/kit_hook.py`, `.claude/kit/`, the kit skills and agents, the `kit_hook.py` entries in `.claude/settings.json` and the `project-kit` block in `.gitignore`. `knowledge/` is plain Markdown; keep it if you like.
 
 ## Repository layout
 
@@ -330,10 +356,11 @@ template/                 what gets copied into a project
   .claude/settings.json   hook registration and deny rules
   .claude/constitution.md
   .claude/hooks/kit_hook.py
-  .claude/kit/            kg.py (graph), ledger.py (ledger, brief), runlog.py (experiments), review.py (second opinion)
+  .claude/kit/            kg.py (graph), ledger.py (ledger, brief), runlog.py (experiments), review.py (second opinion),
+                          upkeep.py (updates, tool watchlist)
   .claude/rules/          knowledge-authoring.md (loads only for knowledge/)
   .claude/skills/         kit-init, learn, reflect, curate, recall, decide, experiment, second-opinion,
-                          handoff, loop-contract, audit
+                          upkeep, handoff, loop-contract, audit
   .claude/agents/         verifier, curator
 ```
 

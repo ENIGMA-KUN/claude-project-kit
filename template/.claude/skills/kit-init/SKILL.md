@@ -124,8 +124,9 @@ Fix every validation error before moving on.
 
 3. If the project trains, evaluates or benchmarks models, or reports experimental results (kind `research` or `data-pipeline`, notebooks, `eval/` or `metrics` code), offer the research guard and, if the user agrees, follow the `setup` section of `.claude/skills/experiment/SKILL.md`: protected evaluation paths, a baseline fingerprint, the evaluation protocol as decisions.
 4. Mention, in one line, that a second opinion from a different model is available but off (`second_opinion` in config, `/second-opinion`). Do not enable it; it sends code to another provider.
-5. Run `python .claude/kit/kg.py doctor` and include its maturity level in your report.
-6. If something in the kit template did not fit this kind of project (a missing node type, a hook that misfired, a skill step that made no sense here), append a short dated note to `<kit_home>/FEEDBACK.md` when `kit_home` is set in config, otherwise to `.claude/kit/kit-feedback.md`. This is how the kit itself improves across projects.
+5. Mention, in one line, that the kit checks weekly for its own updates and reports them at session start (`upkeep.mode` in config: `notify`, `auto` or `off`). If the project depends on outside tools whose fate matters (crawlers, PDF parsers, model runtimes, SDKs, self-hosted services), offer to add the main ones to the watchlist with `python .claude/kit/upkeep.py watch add <name> --github OWNER/REPO --role "<what it does here>"`, or `watch preset research` for a research-agent project. Do not change `upkeep.mode` unless the user asks.
+6. Run `python .claude/kit/kg.py doctor` and include its maturity level in your report.
+7. If something in the kit template did not fit this kind of project (a missing node type, a hook that misfired, a skill step that made no sense here), append a short dated note to `<kit_home>/FEEDBACK.md` when `kit_home` is set in config, otherwise to `.claude/kit/kit-feedback.md`. This is how the kit itself improves across projects.
 
 Report to the user in under 20 lines: mode, what you wrote (files and node counts), commands you verified and any that failed, the questions that stayed open, the maturity level, and the two habits that matter most from now on (`/learn` after a correction, `/curate` about weekly).
 
@@ -133,7 +134,7 @@ Report to the user in under 20 lines: mode, what you wrote (files and node count
 
 Use this when the kit was upgraded or the project changed a lot.
 
-1. `python .claude/kit/kg.py codemap`, `python .claude/kit/kg.py validate`, `python .claude/kit/kg.py stale`, `python .claude/kit/kg.py doctor`.
+1. `python .claude/kit/kg.py codemap`, `python .claude/kit/kg.py validate`, `python .claude/kit/kg.py stale`, `python .claude/kit/kg.py doctor`, and `python .claude/kit/upkeep.py check` for a newer kit release or flagged tools (hand those to `/upkeep`).
 2. Merge anything in `.claude/kit/incoming/` as in Step 4.
 3. Compare the code map with the architecture nodes: new top-level areas without a node, nodes whose `paths` vanished, commands in CLAUDE.md that no longer exist in the manifests.
 4. Check CLAUDE.md claims against reality (C4): every command and path it names must still exist.

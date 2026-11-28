@@ -28,6 +28,7 @@ MANAGED = [
     ".claude/kit/ledger.py",
     ".claude/kit/runlog.py",
     ".claude/kit/review.py",
+    ".claude/kit/upkeep.py",
     ".claude/hooks/kit_hook.py",
     ".claude/rules/knowledge-authoring.md",
     ".claude/agents/verifier.md",

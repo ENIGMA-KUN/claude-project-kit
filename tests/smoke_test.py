@@ -8,12 +8,15 @@ exercises the graph engine and every hook event with realistic hook input.
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 KIT = Path(__file__).resolve().parents[1]
@@ -30,11 +33,28 @@ def run(args: list, cwd: Path, stdin: str = "", env: dict | None = None) -> subp
 
 
 def hook(project: Path, event: str, payload: dict) -> dict:
-    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(project)}
+    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(project), "CLAUDE_KIT_UPKEEP": "off"}
     res = run([sys.executable, str(project / ".claude/hooks/kit_hook.py"), event], project, json.dumps(payload), env)
     if res.returncode != 0:
         return {"_error": res.stderr}
     return json.loads(res.stdout) if res.stdout.strip() else {}
+
+
+def kit_zip(path: Path, version: str, extra: dict | None = None) -> None:
+    """A release archive like codeload.github.com serves, with KIT_VERSION set to `version`."""
+    top = f"claude-project-kit-{version}"
+    with zipfile.ZipFile(path, "w") as zf:
+        for name in ("install.py", "CHANGELOG.md"):
+            zf.write(KIT / name, f"{top}/{name}")
+        for f in sorted((KIT / "template").rglob("*")):
+            if f.is_file() and "__pycache__" not in f.parts:
+                rel = f.relative_to(KIT).as_posix()
+                data = f.read_bytes()
+                if rel == "template/.claude/kit/kg.py":
+                    data = re.sub(rb'KIT_VERSION = "[^"]+"', f'KIT_VERSION = "{version}"'.encode(), data)
+                zf.writestr(f"{top}/{rel}", data)
+        for name, data in (extra or {}).items():
+            zf.writestr(name, data)
 
 
 def make_project(root: Path) -> Path:
@@ -296,9 +316,125 @@ def main() -> int:
         check("second opinion refuses to send a packet with a secret", res.returncode == 4 and "Nothing was sent" in res.stdout, res.stdout[:300])
         (project / "src" / "demo" / "keys.py").unlink()
 
+        # ------------------------------------------------------------ upkeep
+        up = [sys.executable, str(project / ".claude/kit/upkeep.py")]
+        check("installed upkeep.py and the /upkeep skill",
+              (project / ".claude/kit/upkeep.py").exists() and (project / ".claude/skills/upkeep/SKILL.md").exists())
+        fixtures = tmp / "fixtures.json"
+        env_up = {**os.environ, "CLAUDE_KIT_UPKEEP_FIXTURES": str(fixtures), "CLAUDE_PROJECT_DIR": str(project)}
+        version = re.search(r'KIT_VERSION = "([^"]+)"', (KIT / "template/.claude/kit/kg.py").read_text(encoding="utf-8")).group(1)
+        maj, mnr = (int(x) for x in version.split(".")[:2])
+        minor_next, minor_after, major_next = f"{maj}.{mnr + 1}.0", f"{maj}.{mnr + 2}.0", f"{maj + 1}.0.0"
+        api, src, today = "https://api.github.com", "ENIGMA-KUN/claude-project-kit", str(dt.date.today())
+
+        def repo(name: str, pushed: str, lic: str = "MIT", archived: bool = False) -> dict:
+            return {"full_name": name, "archived": archived, "pushed_at": pushed + "T00:00:00Z",
+                    "license": {"spdx_id": lic}, "stargazers_count": 100}
+
+        fx = {
+            f"{api}/repos/{src}/releases/latest": {"tag_name": f"v{minor_next}", "html_url": "https://github.com/x/releases",
+                                                   "published_at": today + "T00:00:00Z", "body": "notes"},
+            f"{api}/repos/acme/oldlib": repo("acme/oldlib", "2024-01-01", archived=True),
+            f"{api}/repos/acme/oldlib/releases/latest": {"tag_name": "v1.0.0"},
+            f"{api}/repos/acme/newlib": repo("acme/newlib", today, "Apache-2.0"),
+            f"{api}/repos/acme/deadlib": repo("acme/deadlib", "2020-01-01"),
+            f"{api}/repos/acme/parser": repo("acme/parser", today),
+            "https://pypi.org/pypi/acme-parser/json": {"info": {"version": "2.1.0"}},
+            f"{api}/repos/acme/oldname": repo("acme/newname", today),
+            f"{api}/repos/acme/oldname/releases/latest": {"__status": 404},
+        }
+
+        def write_fx() -> None:
+            fixtures.write_text(json.dumps(fx), encoding="utf-8")
+
+        def up_report() -> tuple:
+            res = run(up + ["check", "--json"], project, env=env_up)
+            rep = json.loads(res.stdout)
+            return res.returncode, rep, {r["name"]: {k for k, _ in r["flags"]} for r in rep["tools"]}
+
+        write_fx()
+        run(up + ["watch", "add", "oldlib", "--github", "acme/oldlib", "--role", "crawler", "--alt", "acme/newlib,acme/deadlib"], project, env=env_up)
+        run(up + ["watch", "add", "parser", "--github", "acme/parser", "--pypi", "acme-parser", "--pinned", "2.0.0"], project, env=env_up)
+        run(up + ["watch", "add", "renamed", "--github", "acme/oldname"], project, env=env_up)
+        run(up + ["watch", "preset", "research"], project, env=env_up)
+        wl_path = project / ".claude/kit/watchlist.json"
+        wl = json.loads(wl_path.read_text(encoding="utf-8"))
+        check("watch add and preset fill the watchlist",
+              {"oldlib", "parser", "renamed", "crawl4ai", "docling"} <= {t["name"] for t in wl["tools"]})
+        wl["tools"] = [t for t in wl["tools"] if t["name"] in ("oldlib", "parser", "renamed")]
+        wl_path.write_text(json.dumps(wl), encoding="utf-8")
+
+        code, rep, flags = up_report()
+        check("check finds the newer kit release", code == 1 and rep["kit"]["newer"] and rep["kit"]["latest"] == minor_next, json.dumps(rep["kit"]))
+        check("archived tool is flagged", "archived" in flags.get("oldlib", set()), str(flags))
+        alts = {a["name"]: a["ok"] for r in rep["tools"] if r["name"] == "oldlib" for a in r["alternatives"]}
+        check("alternatives are health-checked, the inactive one rejected", alts == {"acme/newlib": True, "acme/deadlib": False}, str(alts))
+        check("a pinned version behind the latest release is flagged", "update" in flags.get("parser", set()), str(flags))
+        check("a renamed repository is flagged", "moved" in flags.get("renamed", set()), str(flags))
+        fx[f"{api}/repos/acme/parser"]["license"] = {"spdx_id": "BUSL-1.1"}
+        write_fx()
+        code, rep, flags = up_report()
+        check("a license change is flagged", "license" in flags.get("parser", set()), str(flags))
+        res = run(up + ["report"], project, env=env_up)
+        check("report shows the last result without the network", "BUSL-1.1" in res.stdout and "acme/newlib: healthy" in res.stdout, res.stdout[-600:])
+        run(up + ["watch", "ack", "parser"], project, env=env_up)
+        code, rep, flags = up_report()
+        check("watch ack accepts the new license", "license" not in flags.get("parser", set()), str(flags))
+        res = run(up + ["probe", "acme/newlib", "acme/deadlib", "--strict"], project, env=env_up)
+        check("probe --strict fails on an inactive repository", res.returncode == 1 and "WARN" in res.stdout, res.stdout)
+
+        out = hook(project, "session-start", {"session_id": "smoke-up1", "source": "startup"})
+        msg = out.get("systemMessage", "")
+        check("session-start tells the user about upkeep findings", "upkeep" in msg and minor_next in msg and "oldlib" in msg, json.dumps(out)[-400:])
+        out = hook(project, "session-start", {"session_id": "smoke-up2", "source": "startup"})
+        check("the same finding is not repeated next session", "systemMessage" not in out, json.dumps(out)[-300:])
+
+        kit_zip(tmp / "minor.zip", minor_next)
+        fx[f"https://codeload.github.com/{src}/zip/refs/tags/v{minor_next}"] = {"__file": str(tmp / "minor.zip")}
+        write_fx()
+        res = run(up + ["update"], project, env=env_up)
+        check("update waits for a yes", res.returncode == 2 and "--yes" in res.stdout, res.stdout[-300:])
+        res = run(up + ["update", "--yes"], project, env=env_up)
+        kg_text = (project / ".claude/kit/kg.py").read_text(encoding="utf-8")
+        check("update installs the release and backs up kit files",
+              res.returncode == 0 and f'KIT_VERSION = "{minor_next}"' in kg_text and any((project / ".claude/kit/backup").rglob("kg.py")),
+              res.stdout[-400:])
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+        check("update keeps kit_home on the real checkout", cfg.get("kit_home") == str(KIT), cfg.get("kit_home", ""))
+
+        kit_zip(tmp / "evil.zip", major_next, {f"claude-project-kit-{major_next}/template/../../evil.py": "print('x')"})
+        fx[f"https://codeload.github.com/{src}/zip/refs/tags/v{major_next}"] = {"__file": str(tmp / "evil.zip")}
+        write_fx()
+        res = run(up + ["update", "--ref", f"v{major_next}", "--yes"], project, env=env_up)
+        check("update refuses an archive with unsafe paths",
+              res.returncode == 3 and "unsafe" in res.stdout and not list(tmp.rglob("evil.py")), res.stdout[-300:])
+
+        cfg["upkeep"]["mode"] = "auto"
+        cfg_path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+        env_auto = {k: v for k, v in env_up.items() if k not in ("CI", "CLAUDE_KIT_UPKEEP")}
+        fx[f"{api}/repos/{src}/releases/latest"]["tag_name"] = f"v{major_next}"
+        write_fx()
+        run(up + ["auto"], project, env=env_auto)
+        kg_text = (project / ".claude/kit/kg.py").read_text(encoding="utf-8")
+        check("auto mode never installs a new major version", f'KIT_VERSION = "{minor_next}"' in kg_text)
+        kit_zip(tmp / "after.zip", minor_after)
+        fx[f"{api}/repos/{src}/releases/latest"]["tag_name"] = f"v{minor_after}"
+        fx[f"https://codeload.github.com/{src}/zip/refs/tags/v{minor_after}"] = {"__file": str(tmp / "after.zip")}
+        write_fx()
+        run(up + ["auto"], project, env=env_auto)
+        kg_text = (project / ".claude/kit/kg.py").read_text(encoding="utf-8")
+        check("auto mode installs a new minor release", f'KIT_VERSION = "{minor_after}"' in kg_text)
+        out = hook(project, "session-start", {"session_id": "smoke-up3", "source": "startup"})
+        check("session-start reports the background update", f"-> {minor_after}" in out.get("systemMessage", ""), json.dumps(out)[-400:])
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+        cfg["upkeep"]["mode"] = "notify"
+        cfg_path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+
         res = run(kg + ["doctor", "--json"], project)
         doc = json.loads(res.stdout)
         check("doctor sees registered hooks", doc.get("hooks_registered") is True, res.stdout)
+        check("doctor reports upkeep", doc.get("upkeep_mode") == "notify" and any(c.startswith("upkeep:") for c in doc.get("checks", [])),
+              res.stdout[-400:])
         res = run(kg + ["codemap"], project)
         cmap = (project / ".claude/kit/code-map.yaml").read_text(encoding="utf-8")
         check("codemap lists manifests and languages", "pyproject.toml" in cmap and "python" in cmap, cmap[:400])

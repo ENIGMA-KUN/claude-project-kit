@@ -33,3 +33,7 @@ Each invariant has an id so proposals can cite it.
 - **C12 evaluation-is-fixed**: Paths in `research.protected_paths` (evaluation data, test sets, metric code, baselines) change only with the user's approval, recorded as a decision. Reported results come from logged runs, failed and worse runs included, compared on the same seeds, data and evaluation code.
   Rationale: a result is only as trustworthy as the evaluation behind it, whoever ran the experiment.
 - **C13 second-opinion-is-opt-in**: Code leaves this machine for another model's review only when the user enabled `second_opinion` and chose its command. The packet is secret-scanned first, and a hit stops it. A second opinion is evidence, not authority: disagreements go to the user.
+
+## Upkeep
+
+- **C14 updates-are-reviewed**: Kit updates install only when the user runs or approves them, or when the user set `upkeep.mode` to `auto`; auto mode never installs a new major version. A watched tool that is archived, deprecated, renamed or relicensed is reported with evidence; replacing it is the user's decision. Upkeep checks send no project data.

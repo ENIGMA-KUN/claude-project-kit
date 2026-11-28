@@ -4,7 +4,8 @@
 Usage (from .claude/settings.json): python kit_hook.py <event>
 
 Events:
-  session-start  inject a short project snapshot (graph health, recent lessons, handoff, git)
+  session-start  inject a short project snapshot (graph health, recent lessons, handoff, git);
+                 report kit updates and watched-tool changes once, and start the upkeep check when due
   prompt         retrieve relevant knowledge nodes for the prompt; log user corrections
   pre-tool       deny or ask on destructive commands and on secrets written into knowledge
   tool-failure   log the failure; warn when the same failure repeats (loop budget)
@@ -50,7 +51,7 @@ CORRECTION_ANY = re.compile(
     r"same (mistake|error) again|that'?s not what i (asked|wanted|meant)|you did it again)",
     re.I,
 )
-KIT_COMMANDS = re.compile(r"^\s*/(reflect|learn|curate|kit-init|audit|handoff|recall|loop-contract)\b")
+KIT_COMMANDS = re.compile(r"^\s*/(reflect|learn|curate|kit-init|audit|handoff|recall|loop-contract|decide|experiment|second-opinion|upkeep)\b")
 
 
 # ---------------------------------------------------------------- small helpers
@@ -220,8 +221,23 @@ def on_session_start(data: dict) -> None:
 
     lines += ledger_context(source, cfg)
 
+    user_msg = ""
+    try:
+        import upkeep  # noqa: PLC0415
+
+        up_line, user_msg = upkeep.session_start()
+        if up_line:
+            lines.append(up_line)
+    except Exception as exc:  # noqa: BLE001
+        note_error("upkeep", exc)
+
+    out: dict = {}
     if lines:
-        emit({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "[project-kit]\n" + "\n".join(lines)}})
+        out["hookSpecificOutput"] = {"hookEventName": "SessionStart", "additionalContext": "[project-kit]\n" + "\n".join(lines)}
+    if user_msg:
+        out["systemMessage"] = user_msg
+    if out:
+        emit(out)
 
 
 def ledger_context(source: str, cfg: dict) -> list:

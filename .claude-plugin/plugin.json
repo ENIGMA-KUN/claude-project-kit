@@ -1,8 +1,8 @@
 {
   "name": "project-kit",
   "displayName": "Claude Project Kit",
-  "version": "1.2.0",
-  "description": "Adapts Claude Code to any repository and keeps improving it: knowledge graph, learning hooks, task ledger that survives compaction and /clear, research-integrity guard, optional second-model review, bounded loops, human-approved curation.",
+  "version": "1.3.0",
+  "description": "Adapts Claude Code to any repository and keeps improving it: knowledge graph, learning hooks, task ledger that survives compaction and /clear, research-integrity guard, optional second-model review, update checks for the kit and the tools you depend on, bounded loops, human-approved curation.",
   "author": {
     "name": "ENIGMA-KUN",
     "url": "https://github.com/ENIGMA-KUN"

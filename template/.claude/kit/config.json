@@ -1,5 +1,5 @@
 {
-  "kit_version": "1.2.0",
+  "kit_version": "1.3.0",
   "kit_home": "",
   "python": "python",
   "initialized": false,
@@ -46,6 +46,13 @@
     "timeout_s": 900,
     "max_diff_chars": 60000,
     "note": "Command that reads a review packet on stdin (or {prompt_file}) and prints 'VERDICT: ACCEPT|REJECT|ESCALATE'. Sends the diff to that tool's provider."
+  },
+  "upkeep": {
+    "mode": "notify",
+    "interval_days": 7,
+    "source": "ENIGMA-KUN/claude-project-kit",
+    "stale_days": 270,
+    "note": "notify: background check at most once per interval, reported at the next session start. auto: also installs minor and patch kit releases, never a major one. off: no background check. Sends GET requests to GitHub and package registries only, no project data."
   },
   "reflect_nudge_threshold": 3,
   "curate_every_days": 7,

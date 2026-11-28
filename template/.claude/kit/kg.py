@@ -35,7 +35,7 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-KIT_VERSION = "1.2.0"
+KIT_VERSION = "1.3.0"
 
 TYPE_DIRS = {
     "architecture": "architecture",
@@ -887,9 +887,31 @@ def doctor(root: Path) -> dict:
         report["checks"].append(f"second opinion: on, command {cmd[0] if cmd else '(none)'} {'found' if found else 'NOT found on PATH'}")
         if not found:
             report["warnings"].append("second_opinion is enabled but its command was not found on PATH")
+    up = cfg.get("upkeep") or {}
+    mode = str(up.get("mode") or "notify")
+    try:
+        up_state = json.loads((root / ".claude/kit/state/upkeep/state.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        up_state = {}
+    last_check = str(up_state.get("checked_at") or "")[:10] or "never"
+    latest = str(((up_state.get("last") or {}).get("kit") or {}).get("latest") or "")
+    behind = bool(latest) and _version_key(latest) > _version_key(KIT_VERSION)
+    tools = (up_state.get("last") or {}).get("tools") or []
+    flagged = sum(1 for t in tools if any(f[0] in ("archived", "deprecated", "license", "moved", "stale") for f in t.get("flags", [])))
+    report["checks"].append(f"upkeep: mode {mode}, last check {last_check}, kit {KIT_VERSION}"
+                            + (f" ({latest} available)" if behind else "") + (f", {flagged} watched tools flagged" if flagged else ""))
+    if behind:
+        report["warnings"].append(f"kit {latest} is available; run `python .claude/kit/upkeep.py update` or /upkeep")
+    report["upkeep_mode"] = mode
     report["research_protected_paths"] = len(protected)
     report["second_opinion"] = bool(so.get("enabled"))
     return report
+
+
+def _version_key(version: str) -> tuple:
+    m = re.match(r"^v?(\d+(?:\.\d+)*)", version.strip())
+    parts = [int(x) for x in m.group(1).split(".")] if m else [0]
+    return tuple(parts + [0] * (4 - len(parts)))
 
 
 # ------------------------------------------------------------------------ scaffold

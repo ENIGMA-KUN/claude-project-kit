@@ -6,7 +6,7 @@ All hooks call one dispatcher, `.claude/hooks/kit_hook.py <event>`. Each handler
 
 | Claude Code event | Handler | Effect |
 |-------------------|---------|--------|
-| `SessionStart` (startup, resume, clear, compact) | `session-start` | Adds a short `[project-kit]` note: whether `/kit-init` is still needed, graph counts, stale nodes, pending proposals, the three newest lessons, the latest handoff, git branch and changed-file count, and whether `/curate` is due. After compaction it puts the open part of the task ledger back into context; after `/clear`, or on a new session within `stale_days`, it adds a one-line pointer to the ledger and brief. Also deletes per-session state older than seven days. |
+| `SessionStart` (startup, resume, clear, compact) | `session-start` | Adds a short `[project-kit]` note: whether `/kit-init` is still needed, graph counts, stale nodes, pending proposals, the three newest lessons, the latest handoff, git branch and changed-file count, whether `/curate` is due, and new upkeep findings (kit release, flagged tools) once each. Starts the upkeep check in the background when it is due. After compaction it puts the open part of the task ledger back into context; after `/clear`, or on a new session within `stale_days`, it adds a one-line pointer to the ledger and brief. Also deletes per-session state older than seven days. |
 | `UserPromptSubmit` | `prompt` | Detects corrections ("no, that's wrong", "I told you", "you keep...") and logs them. Files decision phrases ("let's go with...", "use X instead of Y", "stick with...") as approved decisions and sets the ledger goal from the first substantial prompt. Runs BM25 over active nodes and injects up to three matches as one-line pointers. A node is injected at most once per session. Slash commands are skipped; `/learn` and `/reflect` mark the session as reflected. |
 | `PreToolUse` (Bash, PowerShell, Edit, Write, MultiEdit, NotebookEdit) | `pre-tool` | Denies or asks on destructive commands; asks before edits to the constitution or to protected research paths (including shell commands that delete, move, overwrite or edit them in place); denies secrets written into knowledge or instruction files. |
 | `PostToolUse` (AskUserQuestion) | `post-tool` | Files each answer as an approved decision: `<header>: <chosen option>`. |
@@ -70,6 +70,41 @@ Check each tool's `--help`; flags change between versions.
 The packet contains review instructions, the requirement, the diff since `--base` (or the uncommitted changes, or the last commit), new untracked files, the task ledger's open items and, when research paths are protected, the output of `runlog.py check` and the recent runs. Files that usually hold secrets (`.env*`, keys, certificates, `secrets/`, `credentials*`) are left out, and the whole change is scanned with the kit's secret patterns before anything is sent; a hit stops the review with exit code 4. Packets and answers are saved in `.claude/kit/reviews/` (gitignored).
 
 The reviewer must answer `VERDICT: ACCEPT`, `REJECT` or `ESCALATE` with reasons. Exit codes: 0 accept, 1 reject, 2 escalate or no verdict, 3 not enabled, 4 refused, 5 the command failed or timed out. When enabled, the verifier runs it and treats either REJECT as REJECT and any other disagreement as ESCALATE.
+
+## Upkeep
+
+`upkeep.py` watches two things that go stale quietly: the kit itself, and the outside tools a project depends on.
+
+```json
+"upkeep": {"mode": "notify", "interval_days": 7, "source": "ENIGMA-KUN/claude-project-kit", "stale_days": 270}
+```
+
+| Mode | Background check | Kit updates |
+|------|------------------|-------------|
+| `notify` (default) | at most once per `interval_days`, started detached by `session-start` | reported once at the next session start, installed when you run `upkeep.py update` or approve it in `/upkeep` |
+| `auto` | same | new minor and patch releases are installed by the background check; a new major version still waits for you |
+| `off` | none | only when you run the commands |
+
+The background check never runs when `CLAUDE_KIT_UPKEEP=off` or `CI` is set. It adds no time to session start: the hook reads the cached result and, when the check is due, starts `upkeep.py auto` as a detached process. A finding is shown once, as a message to you and a line for Claude; the same finding is not repeated in later sessions.
+
+Kit version: the latest GitHub release of `source` (falling back to the highest `vX.Y.Z` tag) is compared with `KIT_VERSION` in the installed `kg.py`. `upkeep.py update` downloads that release from codeload.github.com, unpacks only `install.py`, `CHANGELOG.md` and `template/` into a temp folder (rejecting absolute paths, `..` and links), prints the changelog entries since your version, asks, and runs the release's installer. Kit files are backed up to `.claude/kit/backup/<timestamp>/`; files you own go to `.claude/kit/incoming/` as usual. `--from <checkout>` installs from a local copy instead, `--ref <tag or branch>` picks another version, `--dry-run` stops before installing. Point `source` at a fork to update from your own reviewed copy.
+
+Watchlist: `.claude/kit/watchlist.json` (commit it so the team watches the same tools). Each entry names a tool, its role in the project, where to look (`github`, `pypi`, `npm`, `hf`), optionally the version you pin and the license you expect, and alternatives as `OWNER/REPO`.
+
+| Flag | Level | Condition |
+|------|-------|-----------|
+| `archived` | ACT | GitHub repository archived or disabled, or Hugging Face model disabled |
+| `deprecated` | ACT | npm marks the package deprecated |
+| `license` | ACT | SPDX id differs from the expected one (the entry's `license`, else the first one seen) |
+| `moved` | ACT | the repository now answers under another name |
+| `stale` | REVIEW | no commits for `stale_days` |
+| `update` | UPDATE | the latest release is newer than `pinned` |
+| `release` | UPDATE | a new release since the last check (no pin set) |
+| `error` | ERROR | the source could not be reached, usually GitHub's limit of 60 unauthenticated requests an hour |
+
+For tools at ACT or REVIEW, every listed alternative is checked the same way, so an inactive project is never offered as the replacement. `upkeep.py probe OWNER/REPO ...` runs that check on any repository, which `/upkeep` uses to compare candidates it found. `watch ack` accepts a license change or a rename after you have reviewed it. `watch preset research` adds a starting stack for research agents; the kit repository re-checks every preset entry weekly in CI, so a preset that goes stale fails the build.
+
+Requests: `api.github.com`, `codeload.github.com`, and `pypi.org`, `registry.npmjs.org` or `huggingface.co` for watched packages. They carry repository and package names only. `GITHUB_TOKEN` or `GH_TOKEN`, when set, is sent to `api.github.com` alone. Results stay in `.claude/kit/state/upkeep/` (gitignored).
 
 ## Retrieval
 
@@ -152,3 +187,4 @@ Prose is the last resort because it is the only control that has to be remembere
 - The brief parser reads Claude Code's transcript format as of late 2026 (one JSON object per line with `type`, `message.content` blocks and `toolUseResult`). A format change makes the brief thinner, never breaks the session: the ledger itself does not depend on the transcript.
 - The hooks were tested with recorded event payloads and the exact `settings.json` command strings; run `/kit-init` and watch the first sessions to confirm they fire in your Claude Code version (`kg.py signals --days 1` shows what was recorded).
 - Nothing here proves a lesson improved outcomes. The injection and recurrence counts are there so you can check.
+- Upkeep reads activity, releases and license ids, not quality. A busy repository can still be the wrong tool, and a quiet one can be finished rather than abandoned; `/upkeep` puts those calls to you. The kit download is trusted on GitHub's TLS and the source repository, with no separate signature: use a fork as `source` if you want to review releases before they reach your projects.

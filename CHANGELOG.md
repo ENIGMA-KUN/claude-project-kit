@@ -4,6 +4,23 @@ All notable changes to this project. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-27
+
+### Added
+
+- `upkeep.py` and the `/upkeep` skill. The kit compares itself with the latest release of its source repository (or a fork) and installs updates after showing the changelog since your version, backing up every kit file it replaces.
+- Tool watchlist in `.claude/kit/watchlist.json`: outside tools the project depends on are flagged when they are archived, deprecated, renamed, relicensed, inactive for 270 days, or behind the version you pin. The alternatives listed for a flagged tool are checked the same way.
+- `upkeep.py watch preset research`, a starting research-agent stack (metasearch, crawlers, PDF parsers, agent loops, model runtimes, a benchmark), and `upkeep.py probe` to compare candidate replacements.
+- A background check, at most once a week, started detached by the session-start hook. Findings are reported once. Modes: `notify` (default), `auto` (also installs minor and patch releases, never a major one) and `off`.
+- A weekly CI job in this repository that re-checks every preset entry and its alternatives.
+- Constitution invariant C14 (updates are reviewed).
+- `kg.py doctor` reports the upkeep mode, the last check and an available kit update.
+
+### Changed
+
+- Usage logging counts `/decide`, `/experiment`, `/second-opinion` and `/upkeep` as kit commands.
+- The README and FAQ describe the one network use (the update check) and how to turn it off.
+
 ## [1.2.0] - 2026-11-27
 
 ### Added
